@@ -37,7 +37,7 @@ def play_level(level):
             pygame.draw.circle(screen, white, pos, 30, 2)
             draw_text(screen, gt[0], (pos[0] - 7, pos[1] - 10), gate_font)
 
-        level.draw(screen, WIDTH, HEIGHT, button_bg, hover_color, terminal_font)
+        level.draw(screen, WIDTH, HEIGHT, button_bg, hover_color, gate_font)
 
         if dragging:
             dragging.position = (pygame.mouse.get_pos()[0] + offset[0], pygame.mouse.get_pos()[1] + offset[1])
