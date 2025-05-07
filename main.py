@@ -22,7 +22,15 @@ title_font = pygame.font.SysFont('arialrounded', 64)
 menu_font = pygame.font.SysFont('arial', 24)
 gate_font = pygame.font.SysFont('arial', 20)
 terminal_font = pygame.font.SysFont('arial', 8)
-    
+
+logic_gates = {
+    'AND': Gate('AND', ['in1', 'in2'], ['out1'], (0, 0), gate_font, button_bg),
+    'OR': Gate('OR', ['in1', 'in2'], ['out1'], (0, 0), gate_font, button_bg),
+    'NOT': Gate('NOT', ['in1'], ['out1'], (0, 0), gate_font, button_bg),
+    'XOR': Gate('XOR', ['in1', 'in2'], ['out1'], (0, 0), gate_font, button_bg),
+    'NAND': Gate('NAND', ['in1', 'in2'], ['out1'], (0, 0), gate_font, button_bg),
+    'NOR': Gate('NOR', ['in1', 'in2'], ['out1'], (0, 0), gate_font, button_bg),
+}
 
 def play_level(level):
     palette = [(gt, (100 + i * 100, HEIGHT - 50)) for i, gt in enumerate(level.allowed_gates)]
@@ -52,10 +60,8 @@ def play_level(level):
                 if e.button == 1:
                     for gt, pos in palette:
                         if (e.pos[0] - pos[0])**2 + (e.pos[1] - pos[1])**2 < 900:
-                            in_count = 1 if gt == 'NOT' else 2
-                            inputs = [f"in{len(level.gates)}_{i}" for i in range(in_count)]
-                            output = f"out{len(level.gates)}"
-                            new_gate = Gate(gt, inputs, output, e.pos, gate_font, button_bg)
+                            new_gate = logic_gates[gt].copy()
+                            new_gate.position = e.pos
                             level.add_gate(new_gate)
                             dragging = new_gate
                             offset = (new_gate.position[0] - e.pos[0], new_gate.position[1] - e.pos[1])

@@ -15,6 +15,9 @@ class Gate:
         self.font = font
         self.color = color
         self.radius = 30
+    
+    def copy(self):
+        return Gate(gate_type=self.type, input_labels=self.input_labels[:], output_label=self.output_label, position=self.position, font=self.font, color=self.color)
 
     def evaluate(self, inputs: List[bool]) -> bool:
         if self.type == 'AND': return inputs[0] and inputs[1]
@@ -32,7 +35,7 @@ class Gate:
         rect = pygame.Rect(self.position[0] - rect_width // 2, self.position[1] - rect_height // 2, rect_width, rect_height)
         pygame.draw.rect(screen, hover_color if selected else self.color, rect, border_radius=10)
         pygame.draw.rect(screen, white, rect, 2, border_radius=10)
-        draw_text(screen, self.type[0], (self.position[0] - 7, self.position[1] - 10), self.font)
+        draw_text(screen, self.type, (self.position[0] - self.font.size(self.type)[0] // 2, self.position[1] - self.font.size(self.type)[1] // 2), self.font)
         
         # Draw input terminals
         for i, label in enumerate(self.input_labels):
