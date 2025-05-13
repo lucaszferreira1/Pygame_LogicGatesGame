@@ -38,20 +38,38 @@ class Gate:
         draw_text(screen, self.type, (self.position[0] - self.font.size(self.type)[0] // 2, self.position[1] - self.font.size(self.type)[1] // 2), self.font)
         
         # Draw input terminals
-        for i, label in enumerate(self.input_labels):
-            x_offset = -rect_width // 2 - 10
-            y_offset = -rect_height // 2 + (i + 1) * (rect_height // (len(self.input_labels) + 1))
-            pos = (self.position[0] + x_offset, self.position[1] + y_offset)
-            pygame.draw.circle(screen, self.color, pos, 6)
-            draw_text(screen, label, (pos[0] - 7, pos[1] - 10), self.font)
-        
+        input_positions = self.get_input_positions()
+        for i, pos in input_positions:
+            pygame.draw.circle(screen, white, pos, 6)
+            pygame.draw.circle(screen, self.color, pos, 3)
+
         # Draw output terminals
-        x_offset = rect_width // 2 + 10
-        for i, label in enumerate(self.output_label):
+        output_positions = self.get_output_positions()
+        for i, pos in output_positions:
+            print(f"Output position {i}: {pos}")
+            pygame.draw.circle(screen, white, pos, 6)
+            pygame.draw.circle(screen, self.color, pos, 3)
+    
+    def get_input_positions(self):
+        positions = []
+        rect_width, rect_height = 80, 60
+        for i in range(len(self.input_labels)):
+            x_off = -rect_width // 2
+            y_off = -rect_height // 2 + (i + 1) * (rect_height // (len(self.input_labels) + 1))
+            pos = (self.position[0] + x_off, self.position[1] + y_off)
+            positions.append((i, pos))
+        return positions
+
+    def get_output_positions(self):
+        positions = []
+        rect_width, rect_height = 80, 60
+        for i in range(len(self.output_label)):
+            x_offset = rect_width // 2
             y_offset = -rect_height // 2 + (i + 1) * (rect_height // (len(self.output_label) + 1))
             pos = (self.position[0] + x_offset, self.position[1] + y_offset)
-            pygame.draw.circle(screen, self.color, pos, 6)
-            draw_text(screen, label, (pos[0] - 7, pos[1] - 10), self.font)
+            positions.append((i, pos))
+        return positions
+
     
 
 class Wire:
@@ -91,10 +109,12 @@ class Level:
 
     def draw(self, screen, width, height, button_bg, button_hover, gate_font):
         for idx, (lab, val) in enumerate(self.inputs.items()):
-            pygame.draw.circle(screen, button_bg, (50, 100 + idx * 60), 10)
-            draw_text(screen, f"{lab}: {val}", (70, 90 + idx * 60), gate_font)
+            pygame.draw.circle(screen, white, (100, 100 + idx * 60 + 3), 12)
+            pygame.draw.circle(screen, button_bg, (100, 100 + idx * 60 + 3), 10)
+            draw_text(screen, f"{lab}: {val}", (10, 90 + idx * 60), gate_font)
         for idx, (lab, val) in enumerate(self.expected.items()):
-            pygame.draw.circle(screen, button_bg, (width - 50, 100 + idx * 60), 10)
+            pygame.draw.circle(screen, white, (width - 90, 100 + idx * 60 + 3), 12)
+            pygame.draw.circle(screen, button_bg, (width - 90, 100 + idx * 60 + 3), 10)
             draw_text(screen, f"{lab}: {val}", (width - 70, 90 + idx * 60), gate_font)
         for gate in self.gates:
             gate.draw(screen, button_hover)
