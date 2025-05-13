@@ -7,26 +7,18 @@ green = (34, 139, 34)
 wire_color_false = (100, 100, 100)
 
 class Gate:
-    def __init__(self, gate_type: str, input_labels: List[str], output_label: str, position: Tuple[int,int], font, color: Tuple[int,int,int]):
+    def __init__(self, gate_type: str, input_labels: List[str], output_label: str, position: Tuple[int,int], font, color: Tuple[int,int,int], values = [False]):
         self.type = gate_type.upper()
         self.input_labels = input_labels
         self.output_label = output_label
         self.position = position
         self.font = font
         self.color = color
+        self.values = values
         self.radius = 30
     
     def copy(self):
         return Gate(gate_type=self.type, input_labels=self.input_labels[:], output_label=self.output_label, position=self.position, font=self.font, color=self.color)
-
-    def evaluate(self, inputs: List[bool]) -> bool:
-        if self.type == 'AND': return inputs[0] and inputs[1]
-        if self.type == 'OR': return inputs[0] or inputs[1]
-        if self.type == 'NOT': return not inputs[0]
-        if self.type == 'XOR': return inputs[0] ^ inputs[1]
-        if self.type == 'NAND': return not (inputs[0] and inputs[1])
-        if self.type == 'NOR': return not (inputs[0] or inputs[1])
-        return False
 
     def draw(self, screen, hover_color, x=-1, y=-1, selected=False):
         if x == -1 and y == -1:
@@ -46,7 +38,6 @@ class Gate:
         # Draw output terminals
         output_positions = self.get_output_positions()
         for i, pos in output_positions:
-            print(f"Output position {i}: {pos}")
             pygame.draw.circle(screen, white, pos, 6)
             pygame.draw.circle(screen, self.color, pos, 3)
     
@@ -69,14 +60,15 @@ class Gate:
             pos = (self.position[0] + x_offset, self.position[1] + y_offset)
             positions.append((i, pos))
         return positions
-
     
 
 class Wire:
-    def __init__(self, from_, to_):
+    def __init__(self, from_, to_ = None, io = "IN", value=False):
         self.from_ = from_
         self.to_ = to_
+        self.io = io
         self.middle_points = []
+        self.value = value
         self.color = wire_color_false
     
     def draw(self, screen, signal):
@@ -91,6 +83,9 @@ class Wire:
             pygame.draw.line(screen, self.color, self.middle_points[-1], to_pos, 5)
         else:
             pygame.draw.line(screen, self.color, from_pos, to_pos, 5)
+
+    def check_x_to_y(self):
+        return True if self.io == "IN" else False
 
 
 class Level:
@@ -108,13 +103,29 @@ class Level:
         self.gates.append(gate)
 
     def draw(self, screen, width, height, button_bg, button_hover, gate_font):
+        input_positions = self.get_input_terminals()
         for idx, (lab, val) in enumerate(self.inputs.items()):
-            pygame.draw.circle(screen, white, (100, 100 + idx * 60 + 3), 12)
-            pygame.draw.circle(screen, button_bg, (100, 100 + idx * 60 + 3), 10)
-            draw_text(screen, f"{lab}: {val}", (10, 90 + idx * 60), gate_font)
+            pygame.draw.circle(screen, white, input_positions[idx][1], 12)
+            pygame.draw.circle(screen, button_bg, input_positions[idx][1], 10)
+            draw_text(screen, f"{lab}: {val}", (10, input_positions[idx][1][1] - 13), gate_font)
+        output_positions = self.get_output_terminals(width)
         for idx, (lab, val) in enumerate(self.expected.items()):
-            pygame.draw.circle(screen, white, (width - 90, 100 + idx * 60 + 3), 12)
-            pygame.draw.circle(screen, button_bg, (width - 90, 100 + idx * 60 + 3), 10)
-            draw_text(screen, f"{lab}: {val}", (width - 70, 90 + idx * 60), gate_font)
+            pygame.draw.circle(screen, white, output_positions[idx][1], 12)
+            pygame.draw.circle(screen, button_bg, output_positions[idx][1], 10)
+            draw_text(screen, f"{lab}: {val}", (output_positions[idx][1][0] + 20, output_positions[idx][1][1] - 13), gate_font)
         for gate in self.gates:
             gate.draw(screen, button_hover)
+    
+    def get_input_terminals(self):
+        positions = []
+        for i in range(len(self.inputs.items())):
+            pos = (100, 100 + i * 60 + 3)
+            positions.append((i, pos))
+        return positions
+
+    def get_output_terminals(self, width):
+        positions = []
+        for i in range(len(self.expected.items())):
+            pos = (width - 100, 100 + i * 60 + 3)
+            positions.append((i, pos))
+        return positions
