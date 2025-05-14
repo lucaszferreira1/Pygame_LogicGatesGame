@@ -1,5 +1,5 @@
 import pygame
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from ui import draw_text
 
 white = (255, 255, 255)
@@ -31,14 +31,16 @@ class Gate:
         # Draw input terminals
         input_positions = self.get_input_positions()
         for i, pos in input_positions:
+            color = green if self.inputs[i] else (50, 50, 50)
             pygame.draw.circle(screen, white, pos, 6)
-            pygame.draw.circle(screen, self.color, pos, 3)
+            pygame.draw.circle(screen, color, pos, 4)
 
         # Draw output terminals
         output_positions = self.get_output_positions()
         for i, pos in output_positions:
+            color = green if self.outputs[i] else (50, 50, 50)
             pygame.draw.circle(screen, white, pos, 6)
-            pygame.draw.circle(screen, self.color, pos, 3)
+            pygame.draw.circle(screen, color, pos, 4)
     
     def update(self):
         self.evaluate()
@@ -125,13 +127,18 @@ class Wire:
     
     def update_own_value(self, ports):
         if self.from_i[1] == "GATE_O":
-            gate = ports["GATE"][self.to_i[0]]
+            gate = ports["GATE"][self.from_i[0]]
             self.value = gate.outputs[self.from_i[2]]
+        elif self.from_i[1] == "TERMINAL_O":
+            term = ports["TERMINAL_O"][self.from_i[0]]
+            self.value = term[2]
 
     def set_value_to_out(self, ports):
         if self.to_i[1] == "GATE_I":
             gate = ports["GATE"][self.to_i[0]]
             gate.inputs[self.to_i[2]] = self.value
+        elif self.from_i[1] == "TERMINAL_I":
+            pass # Alterar o valor do terminal da esquerda
 
     def __str__(self):
         return f"Wire(from={self.from_i}, to={self.to_i}, value={self.value})"
@@ -146,10 +153,18 @@ class Level:
         self.gates: List[Gate] = []
         self.wires: List[Wire] = []
         self.current_wire: Wire = None
-
     
-    def add_gate(self, gate: Gate):
+    def add_gate(self, gate):
         self.gates.append(gate)
+
+    def remove_gate(self, gate):
+        # Remove all wires connected to this gate
+        idx_gate = self.gates.index(gate)
+        self.wires = [wire for wire in self.wires if not (
+            (wire.from_i[1] == "GATE_O" and wire.from_i[0] == idx_gate) or
+            (wire.to_i[1] == "GATE_I" and wire.to_i[0] == idx_gate)
+        )]
+        self.gates.remove(gate)
 
     def draw(self, screen, width, height, button_bg, button_hover, gate_font, mouse_pos):
         input_positions = self.get_input_terminals()

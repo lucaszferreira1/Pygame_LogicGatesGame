@@ -23,6 +23,10 @@ menu_font = pygame.font.SysFont('arial', 24)
 gate_font = pygame.font.SysFont('arial', 20)
 terminal_font = pygame.font.SysFont('arial', 8)
 
+levels = [Level("Nível 1", [True, False], [False], ['AND', 'OR', 'NOT']),
+            Level("Nível 2", [False, False, True], [False], ['AND', 'NOT', 'OR']),
+            Level("Nível 3", [True, True], [False], ['XOR', 'NOT'])]
+
 logic_gates = {
     'AND': Gate('AND', [False, False], [False], (0, 0), gate_font, button_bg),
     'OR': Gate('OR', [False, False], [False], (0, 0), gate_font, button_bg),
@@ -140,7 +144,7 @@ def play_level(level):
             elif e.type == pygame.MOUSEBUTTONUP:
                 if e.button == 1:
                     if dragging and dragging.position[1] > HEIGHT - 100:
-                        level.gates.remove(dragging)
+                        level.remove_gate(dragging)
                     dragging = None
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:
@@ -156,9 +160,6 @@ def play_level(level):
 
 
 def history_menu():
-    levels = [Level("Nível 1", [True, False], [False], ['AND', 'OR', 'NOT']),
-              Level("Nível 2", [False, False, True], [False], ['AND', 'NOT', 'OR']),
-              Level("Nível 3", [True, True], [False], ['XOR', 'NOT'])]
     labels = [lvl.name for lvl in levels]
 
     # Grid
