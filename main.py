@@ -58,6 +58,7 @@ def play_level(level):
             if e.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
             elif e.type == pygame.MOUSEBUTTONDOWN:
+                # Left Click
                 if e.button == 1 and not dragging and not wiring:
                     for gt, pos in palette:
                         if (e.pos[0] - pos[0])**2 + (e.pos[1] - pos[1])**2 < 900:
@@ -72,31 +73,35 @@ def play_level(level):
                             dragging = gate
                             offset = (gate.position[0] - e.pos[0], gate.position[1] - e.pos[1])
                             break
+                # Right Click
                 elif e.button == 3 and not dragging:
                     clicked = False
                     for i, pos in level.get_input_terminals():
                         if (e.pos[0] - pos[0])**2 + (e.pos[1] - pos[1])**2 < 12**2:
                             if not wiring:
-                                wiring = Wire(level.inputs[i])
-                            elif wiring.check_i_to_o():
-                                wiring.to_ = level.inputs[i]
+                                wiring = Wire((i, "TERMINAL_I", 0), None, level.inputs[i])
+                            elif not wiring.from_i:
+                                wiring.from_i = (i, "TERMINAL_I", 0)
                             clicked = True
                             break
                     if not clicked:
                         for i, pos in level.get_output_terminals(WIDTH):
                             if (e.pos[0] - pos[0])**2 + (e.pos[1] - pos[1])**2 < 12**2:
                                 if not wiring:
-                                    wiring = Wire(None, level.expected[i], "OUT")
-                                elif wiring.check_x_to_y():
-                                    wiring.to_ = level.expected[i]
+                                    wiring = Wire(None, (i, "TERMINAL_O", 0), level.expected[i])
+                                elif not wiring.to_i:
+                                    wiring.to_i = (i, "TERMINAL_O", 0)
                                 clicked = True
                                 break
                     if not clicked:
-                        for gate in level.gates:
+                        for gate_idx, gate in enumerate(level.gates):
                             input_terminals = gate.get_input_positions()
                             for i, pos in input_terminals:
                                 if (e.pos[0] - pos[0])**2 + (e.pos[1] - pos[1])**2 < 8**2:
-                                    # Código pra fio
+                                    if not wiring:
+                                        wiring = Wire(None, (gate_idx, "GATE_I", i), gate.value)
+                                    elif not wiring.to_i:
+                                        wiring.to_i = (gate_idx, "GATE_I", i)
                                     clicked = True
                                     break
                             if clicked:
@@ -104,12 +109,20 @@ def play_level(level):
                             output_terminals = gate.get_output_positions()
                             for i, pos in output_terminals:
                                 if (e.pos[0] - pos[0])**2 + (e.pos[1] - pos[1])**2 < 8**2:
-                                    # Código pra fio
+                                    if not wiring:
+                                        wiring = Wire((gate_idx, "GATE_O", i), None, gate.value)
+                                    elif not wiring.from_i:
+                                        wiring.from_i = (gate_idx, "GATE_O", i)
                                     clicked = True
                                     break
                             if clicked:
                                 break
-                    #l
+                    if not clicked and wiring:
+                        wiring = None
+                        break
+                    if wiring.from_i and wiring.to_i:
+                        level.wires.append(wiring)
+                        wiring = None
             elif e.type == pygame.MOUSEBUTTONUP:
                 if e.button == 1:
                     if dragging and dragging.position[1] > HEIGHT - 100:
@@ -123,9 +136,9 @@ def play_level(level):
 
 
 def history_menu():
-    levels = [Level("Nível 1", {'A': True, 'B': False}, {'X': False}, ['AND', 'OR', 'NOT']),
-              Level("Nível 2", {'A': False, 'B': False, 'C': True}, {'Y': False}, ['AND', 'NOT', 'OR']),
-              Level("Nível 3", {'A': True, 'B': True}, {'Z': False}, ['XOR', 'NOT'])]
+    levels = [Level("Nível 1", [True, False], [False], ['AND', 'OR', 'NOT']),
+              Level("Nível 2", [False, False, True], [False], ['AND', 'NOT', 'OR']),
+              Level("Nível 3", [True, True], [False], ['XOR', 'NOT'])]
     labels = [lvl.name for lvl in levels]
 
     # Grid

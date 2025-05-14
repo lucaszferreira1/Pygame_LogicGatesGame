@@ -7,14 +7,14 @@ green = (34, 139, 34)
 wire_color_false = (100, 100, 100)
 
 class Gate:
-    def __init__(self, gate_type: str, input_labels: List[str], output_label: str, position: Tuple[int,int], font, color: Tuple[int,int,int], values = [False]):
+    def __init__(self, gate_type: str, input_labels: List[str], output_label: str, position: Tuple[int,int], font, color: Tuple[int,int,int], value=False):
         self.type = gate_type.upper()
         self.input_labels = input_labels
         self.output_label = output_label
         self.position = position
         self.font = font
         self.color = color
-        self.values = values
+        self.value = value
         self.radius = 30
     
     def copy(self):
@@ -60,21 +60,21 @@ class Gate:
             pos = (self.position[0] + x_offset, self.position[1] + y_offset)
             positions.append((i, pos))
         return positions
-    
+
 
 class Wire:
-    def __init__(self, from_, to_ = None, io = "IN", value=False):
-        self.from_ = from_
-        self.to_ = to_
-        self.io = io
+    def __init__(self, from_i: Tuple[int, str, int], to_i: Tuple[int, str, int], value=False):
+        self.from_i = from_i
+        self.to_i = to_i
         self.middle_points = []
         self.value = value
         self.color = wire_color_false
     
-    def draw(self, screen, signal):
-        self.color = green if signal else wire_color_false
-        from_pos = self.from_.position
-        to_pos = self.to_.position
+    def draw(self, screen, ports):
+        self.color = green if self.value else wire_color_false
+        from_pos = self.get_port_pos(ports, False)
+        to_pos = self.get_port_pos(ports, True)
+        
         if len(self.middle_points) > 0:
             pygame.draw.line(screen, self.color, from_pos, self.middle_points[0], 5)
             if len(self.middle_points) > 1:
@@ -84,16 +84,25 @@ class Wire:
         else:
             pygame.draw.line(screen, self.color, from_pos, to_pos, 5)
 
-    def check_x_to_y(self):
-        return True if self.io == "IN" else False
+    def get_port_pos(self, ports, isTo):
+        value = self.to_i if isTo else self.from_i
+        if value[1] == "GATE_I":
+            gate = ports["GATE"][value[0]]
+            pos = gate.get_input_positions()[value[2]][1]
+        elif value[1] == "GATE_O":
+            gate = ports["GATE"][value[0]]
+            pos = gate.get_output_positions()[value[2]][1]
+        else:
+            pos = ports[value[1]][value[0]][1]
+        return pos
 
 
 class Level:
-    def __init__(self, name, inputs: Dict[str, bool], expected: Dict[str, bool], allowed_gates: List[str]):
+    def __init__(self, name: str, inputs: List[bool], expected: List[bool], allowed_gates: List[str]):
         self.name = name
         self.inputs = inputs.copy()
         self.expected = expected.copy()
-        self.allowed_gates = allowed_gates
+        self.allowed_gates = allowed_gates.copy()
         self.gates: List[Gate] = []
         self.wires: List[Wire] = []
         self.selected_terminal: Optional[Tuple[str, Tuple[int, int]]] = None
@@ -104,28 +113,33 @@ class Level:
 
     def draw(self, screen, width, height, button_bg, button_hover, gate_font):
         input_positions = self.get_input_terminals()
-        for idx, (lab, val) in enumerate(self.inputs.items()):
-            pygame.draw.circle(screen, white, input_positions[idx][1], 12)
-            pygame.draw.circle(screen, button_bg, input_positions[idx][1], 10)
-            draw_text(screen, f"{lab}: {val}", (10, input_positions[idx][1][1] - 13), gate_font)
+        for i, val in enumerate(self.inputs):
+            pygame.draw.circle(screen, white, input_positions[i][1], 12)
+            pygame.draw.circle(screen, button_bg, input_positions[i][1], 10)
+            draw_text(screen, f"{i}: {val}", (10, input_positions[i][1][1] - 13), gate_font)
         output_positions = self.get_output_terminals(width)
-        for idx, (lab, val) in enumerate(self.expected.items()):
-            pygame.draw.circle(screen, white, output_positions[idx][1], 12)
-            pygame.draw.circle(screen, button_bg, output_positions[idx][1], 10)
-            draw_text(screen, f"{lab}: {val}", (output_positions[idx][1][0] + 20, output_positions[idx][1][1] - 13), gate_font)
+        for i, val in enumerate(self.expected):
+            pygame.draw.circle(screen, white, output_positions[i][1], 12)
+            pygame.draw.circle(screen, button_bg, output_positions[i][1], 10)
+            draw_text(screen, f"{i}: {val}", (output_positions[i][1][0] + 20, output_positions[i][1][1] - 13), gate_font)
         for gate in self.gates:
             gate.draw(screen, button_hover)
+        
+        ports = {"TERMINAL_I": input_positions, "TERMINAL_O": output_positions, "GATE": self.gates}
+        for wire in self.wires:
+            wire.draw(screen, ports)
+
     
     def get_input_terminals(self):
         positions = []
-        for i in range(len(self.inputs.items())):
+        for i in range(len(self.inputs)):
             pos = (100, 100 + i * 60 + 3)
             positions.append((i, pos))
         return positions
 
     def get_output_terminals(self, width):
         positions = []
-        for i in range(len(self.expected.items())):
+        for i in range(len(self.expected)):
             pos = (width - 100, 100 + i * 60 + 3)
             positions.append((i, pos))
         return positions
