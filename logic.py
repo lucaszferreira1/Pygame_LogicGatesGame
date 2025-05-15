@@ -8,6 +8,7 @@ wire_color_false = (100, 100, 100)
 
 class Gate:
     def __init__(self, gate_type: str, inputs: List[bool], outputs: List[bool], position: Tuple[int,int], font, color: Tuple[int,int,int]):
+        self.id = None
         self.type = gate_type.upper()
         self.inputs = inputs
         self.outputs = outputs
@@ -31,14 +32,14 @@ class Gate:
         # Draw input terminals
         input_positions = self.get_input_positions()
         for i, pos in input_positions:
-            color = green if self.inputs[i] else (50, 50, 50)
+            color = green if self.inputs[i] else self.color
             pygame.draw.circle(screen, white, pos, 6)
             pygame.draw.circle(screen, color, pos, 4)
 
         # Draw output terminals
         output_positions = self.get_output_positions()
         for i, pos in output_positions:
-            color = green if self.outputs[i] else (50, 50, 50)
+            color = green if self.outputs[i] else self.color
             pygame.draw.circle(screen, white, pos, 6)
             pygame.draw.circle(screen, color, pos, 4)
     
@@ -150,21 +151,21 @@ class Level:
         self.inputs = inputs.copy()
         self.expected = expected.copy()
         self.allowed_gates = allowed_gates.copy()
-        self.gates: List[Gate] = []
+        self.gates: dict[int, Gate] = {}
         self.wires: List[Wire] = []
         self.current_wire: Wire = None
     
-    def add_gate(self, gate):
-        self.gates.append(gate)
+    def add_gate(self, gate, id_gate):
+        gate.id = id_gate
+        self.gates[id_gate] = gate
 
     def remove_gate(self, gate):
-        # Remove all wires connected to this gate
-        idx_gate = self.gates.index(gate)
+        idx_gate = gate.id
         self.wires = [wire for wire in self.wires if not (
             (wire.from_i[1] == "GATE_O" and wire.from_i[0] == idx_gate) or
             (wire.to_i[1] == "GATE_I" and wire.to_i[0] == idx_gate)
         )]
-        self.gates.remove(gate)
+        self.gates.pop(idx_gate)
 
     def draw(self, screen, width, height, button_bg, button_hover, gate_font, mouse_pos):
         input_positions = self.get_input_terminals()
@@ -177,7 +178,7 @@ class Level:
             pygame.draw.circle(screen, white, output_positions[i][1], 12)
             pygame.draw.circle(screen, button_bg, output_positions[i][1], 10)
             draw_text(screen, f"{i}: {val}", (output_positions[i][1][0] + 20, output_positions[i][1][1] - 13), gate_font)
-        for gate in self.gates:
+        for gate in self.gates.values():
             gate.update()
             gate.draw(screen, button_hover)
         
@@ -189,7 +190,6 @@ class Level:
         if self.current_wire:
             self.current_wire.draw_one_point(screen, ports, mouse_pos)
 
-    
     def get_input_terminals(self):
         positions = []
         for i in range(len(self.inputs)):

@@ -42,6 +42,7 @@ def play_level(level):
     dragging = None
     wiring = None
     offset = (0, 0)
+    count_gates = 0
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
@@ -70,11 +71,12 @@ def play_level(level):
                         if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 900:
                             new_gate = logic_gates[gt].copy()
                             new_gate.position = mouse_pos
-                            level.add_gate(new_gate)
+                            level.add_gate(new_gate, count_gates)
+                            count_gates += 1
                             dragging = new_gate
                             offset = (new_gate.position[0] - mouse_pos[0], new_gate.position[1] - mouse_pos[1])
                             break
-                    for gate in level.gates:
+                    for gate in level.gates.values():
                         if (mouse_pos[0] - gate.position[0])**2 + (mouse_pos[1] - gate.position[1])**2 < gate.radius**2:
                             dragging = gate
                             offset = (gate.position[0] - mouse_pos[0], gate.position[1] - mouse_pos[1])
@@ -105,17 +107,17 @@ def play_level(level):
                                 clicked = True
                                 break
                     if not clicked:
-                        for gate_idx, gate in enumerate(level.gates):
+                        for gate in level.gates.values():
                             input_terminals = gate.get_input_positions()
                             for i, pos in input_terminals:
                                 if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 8**2:
-                                    has_two = level.gate_has_two_wires(gate_idx, i)
+                                    has_two = level.gate_has_two_wires(gate.id, i)
                                     if not has_two:
                                         if not wiring:
-                                            wiring = Wire(None, (gate_idx, "GATE_I", i))
+                                            wiring = Wire(None, (gate.id, "GATE_I", i))
                                             level.current_wire = wiring
                                         elif not wiring.to_i:
-                                            wiring.to_i = (gate_idx, "GATE_I", i)
+                                            wiring.to_i = (gate.id, "GATE_I", i)
                                     clicked = True
                                     break
                             if clicked:
@@ -124,10 +126,10 @@ def play_level(level):
                             for i, pos in output_terminals:
                                 if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 8**2:
                                     if not wiring:
-                                        wiring = Wire((gate_idx, "GATE_O", i), None, gate.outputs[i])
+                                        wiring = Wire((gate.id, "GATE_O", i), None, gate.outputs[i])
                                         level.current_wire = wiring
                                     elif not wiring.from_i:
-                                        wiring.from_i = (gate_idx, "GATE_O", i, gate.outputs[i])
+                                        wiring.from_i = (gate.id, "GATE_O", i, gate.outputs[i])
                                     clicked = True
                                     break
                             if clicked:
@@ -156,7 +158,7 @@ def play_level(level):
                     else:
                         return
 
-        clock.tick(60)
+        clock.tick(240)
 
 
 def history_menu():
