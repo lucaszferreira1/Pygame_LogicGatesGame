@@ -49,9 +49,11 @@ def play_level(level):
         screen.fill(dark_bg)
         pygame.draw.rect(screen, panel_bg, (0, HEIGHT - 100, WIDTH, 100))
         for gt, pos in palette:
-            pygame.draw.circle(screen, button_bg, pos, 30)
-            pygame.draw.circle(screen, white, pos, 30, 2)
-            draw_text(screen, gt[0], (pos[0] - 7, pos[1] - 10), gate_font)
+            rect_width, rect_height = 80, 60
+            rect = pygame.Rect(pos[0] - rect_width // 2, pos[1] - rect_height // 2, rect_width, rect_height)
+            pygame.draw.rect(screen, button_bg, rect, border_radius=10)
+            pygame.draw.rect(screen, white, rect, 2, border_radius=10)
+            draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
 
         level.draw(screen, WIDTH, HEIGHT, button_bg, hover_color, gate_font, mouse_pos)
 
@@ -68,7 +70,7 @@ def play_level(level):
                 # Left Click
                 if e.button == 1 and not dragging and not wiring:
                     for gt, pos in palette:
-                        if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 900:
+                        if abs(mouse_pos[0] - pos[0]) < 40 and abs(mouse_pos[1] - pos[1]) < 30:
                             new_gate = logic_gates[gt].copy()
                             new_gate.position = mouse_pos
                             level.add_gate(new_gate, count_gates)
