@@ -23,17 +23,28 @@ menu_font = pygame.font.SysFont('arial', 24)
 gate_font = pygame.font.SysFont('arial', 20)
 terminal_font = pygame.font.SysFont('arial', 8)
 
-levels = [Level("Nível 1", [True, False], [False], ['AND', 'OR', 'NOT']),
-            Level("Nível 2", [False, False, True], [False], ['AND', 'NOT', 'OR']),
-            Level("Nível 3", [True, True], [False], ['XOR', 'NOT'])]
+def level1_function(inputs):
+    return [inputs[0] or inputs[1]]
+
+def level2_function(inputs):
+    return [inputs[0] and inputs[1]]
+
+def level3_function(inputs):
+    return [inputs[0] ^ inputs[1]]
+
+
+levels = [Level("Nível 1", [True, False], ['AND', 'OR', 'NOT', 'XOR', 'NAND', 'NOR', 'XNOR'], level1_function),
+            Level("Nível 2", [False, False, True], ['AND', 'NOT', 'OR'], level2_function),
+            Level("Nível 3", [True, True], ['XOR', 'NOT'], level3_function)]
 
 logic_gates = {
-    'AND': Gate('AND', [False, False], [False], (0, 0), gate_font, button_bg),
-    'OR': Gate('OR', [False, False], [False], (0, 0), gate_font, button_bg),
-    'NOT': Gate('NOT', [False], [True], (0, 0), gate_font, button_bg),
-    'XOR': Gate('XOR', [False, False], [False], (0, 0), gate_font, button_bg),
-    'NAND': Gate('NAND', [False, False], [False], (0, 0), gate_font, button_bg),
-    'NOR': Gate('NOR', [False, False], [False], (0, 0), gate_font, button_bg),
+    'AND': Gate('AND', [False, False], [False], (0, 0), button_bg),
+    'OR': Gate('OR', [False, False], [False], (0, 0), button_bg),
+    'NOT': Gate('NOT', [False], [True], (0, 0), button_bg),
+    'XOR': Gate('XOR', [False, False], [False], (0, 0), button_bg),
+    'NAND': Gate('NAND', [False, False], [False], (0, 0), button_bg),
+    'NOR': Gate('NOR', [False, False], [False], (0, 0), button_bg),
+    "XNOR": Gate("XNOR", [False, False], [False], (0, 0), button_bg),
 }
 
 def play_level(level):
@@ -47,6 +58,7 @@ def play_level(level):
     while True:
         mouse_pos = pygame.mouse.get_pos()
         screen.fill(dark_bg)
+
         pygame.draw.rect(screen, panel_bg, (0, HEIGHT - 100, WIDTH, 100))
         for gt, pos in palette:
             rect_width, rect_height = 80, 60
@@ -55,7 +67,7 @@ def play_level(level):
             pygame.draw.rect(screen, white, rect, 2, border_radius=10)
             draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
 
-        level.draw(screen, WIDTH, HEIGHT, button_bg, hover_color, gate_font, mouse_pos)
+        level.draw(screen, WIDTH, HEIGHT, button_bg, hover_color, mouse_pos)
 
         if dragging:
             dragging.position = (mouse_pos[0] + offset[0], mouse_pos[1] + offset[1])
@@ -125,7 +137,7 @@ def play_level(level):
                             if clicked:
                                 break
                             output_terminals = gate.get_output_positions()
-                            for i, pos in output_terminals:
+                            for i, pos, ignore in output_terminals:
                                 if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 8**2:
                                     if not wiring:
                                         wiring = Wire((gate.id, "GATE_O", i), None, gate.outputs[i])
@@ -280,7 +292,7 @@ def options_menu():
 
 
 def main_menu():
-    options = ["História", "Sem Fim", "Opções"]
+    options = ["Níveis", "Sem Fim", "Opções"]
     buttons = [Button(opt, title_font, WIDTH//2, 200 + i*100, 50, button_bg, hover_color) for i, opt in enumerate(options)]
     selected = 0
 

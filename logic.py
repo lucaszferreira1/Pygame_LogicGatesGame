@@ -6,64 +6,96 @@ white = (255, 255, 255)
 green = (34, 139, 34)
 wire_color_false = (100, 100, 100)
 
+pygame.font.init()
+gate_font = pygame.font.SysFont('arial', 20)
+expected_font = pygame.font.SysFont('arial', 10)
+
+default_gates = {"AND": ["images//AND.png", [[-20, -10], [-20, 10]], [20, 0, 0]],
+                 "OR": ["images//OR.png", [[-20, -10], [-20, 10]], [20, 0, 0]],
+                 "NOT": ["images//NOT.png", [[-20, 0]], [17, 0, 1]],
+                 "XOR": ["images//XOR.png", [[-20, -10], [-20, 10]], [20, 0, 0]],
+                 "XNOR": ["images//XNOR.png", [[-20, -10], [-20, 10]], [20, 0, 1]],
+                 "NAND": ["images//NAND.png", [[-20, -10], [-20, 10]], [20, 0, 1]],
+                 "NOR": ["images//NOR.png", [[-20, -10], [-20, 10]], [20, 0, 1]]}
+
 class Gate:
-    def __init__(self, gate_type: str, inputs: List[bool], outputs: List[bool], position: Tuple[int,int], font, color: Tuple[int,int,int]):
+    def __init__(self, gate_type: str, inputs: List[bool], outputs: List[bool], position: Tuple[int,int], color: Tuple[int,int,int]):
         self.id = None
         self.type = gate_type.upper()
         self.inputs = inputs
         self.outputs = outputs
         self.position = position
-        self.font = font
         self.color = color
         self.radius = 30
     
     def copy(self):
-        return Gate(gate_type=self.type, inputs=self.inputs[:], outputs=self.outputs, position=self.position, font=self.font, color=self.color)
+        return Gate(gate_type=self.type, inputs=self.inputs[:], outputs=self.outputs, position=self.position, color=self.color)
 
     def draw(self, screen, hover_color, x=-1, y=-1, selected=False):
         if x == -1 and y == -1:
             x, y = self.position
-        rect_width, rect_height = 80, 60
-        rect = pygame.Rect(self.position[0] - rect_width // 2, self.position[1] - rect_height // 2, rect_width, rect_height)
-        pygame.draw.rect(screen, hover_color if selected else self.color, rect, border_radius=10)
-        pygame.draw.rect(screen, white, rect, 2, border_radius=10)
-        draw_text(screen, self.type, (self.position[0] - self.font.size(self.type)[0] // 2, self.position[1] - self.font.size(self.type)[1] // 2), self.font)
-        
+        if self.type in default_gates.keys():
+            image = pygame.image.load(default_gates[self.type][0])
+            image = pygame.transform.scale(image, (self.radius * 2, self.radius * 2))
+            screen.blit(image, (x - self.radius, y - self.radius))
+        else:
+            rect_width, rect_height = 80, 60
+            rect = pygame.Rect(self.position[0] - rect_width // 2, self.position[1] - rect_height // 2, rect_width, rect_height)
+            pygame.draw.rect(screen, hover_color if selected else self.color, rect, border_radius=10)
+            pygame.draw.rect(screen, white, rect, 2, border_radius=10)
+            draw_text(screen, self.type, (self.position[0] - self.font.size(self.type)[0] // 2, self.position[1] - self.font.size(self.type)[1] // 2), self.font)
+            
         # Draw input terminals
         input_positions = self.get_input_positions()
         for i, pos in input_positions:
             color = green if self.inputs[i] else self.color
-            pygame.draw.circle(screen, white, pos, 6)
-            pygame.draw.circle(screen, color, pos, 4)
+            pygame.draw.rect(screen, white, (pos[0] - 6, pos[1] - 6, 12, 12))
+            pygame.draw.rect(screen, color, (pos[0] - 4, pos[1] - 4, 8, 8))
 
         # Draw output terminals
         output_positions = self.get_output_positions()
-        for i, pos in output_positions:
+        for i, pos, circle_not in output_positions:
             color = green if self.outputs[i] else self.color
-            pygame.draw.circle(screen, white, pos, 6)
-            pygame.draw.circle(screen, color, pos, 4)
+            if circle_not:
+                pygame.draw.circle(screen, white, pos, 6)
+                pygame.draw.circle(screen, color, pos, 4)
+            else:
+                pygame.draw.rect(screen, white, (pos[0] - 6, pos[1] - 6, 12, 12))
+                pygame.draw.rect(screen, color, (pos[0] - 4, pos[1] - 4, 8, 8))
     
     def update(self):
         self.evaluate()
 
     def get_input_positions(self):
         positions = []
-        rect_width, rect_height = 80, 60
-        for i in range(len(self.inputs)):
-            x_off = -rect_width // 2
-            y_off = -rect_height // 2 + (i + 1) * (rect_height // (len(self.inputs) + 1))
-            pos = (self.position[0] + x_off, self.position[1] + y_off)
-            positions.append((i, pos))
+        if self.type in default_gates.keys():
+            for i, pos in enumerate(default_gates[self.type][1]):
+                positions.append((i, (self.position[0] + pos[0], self.position[1] + pos[1])))
+        else:
+            rect_width, rect_height = 80, 60
+            for i in range(len(self.inputs)):
+                x_off = -rect_width // 2
+                y_off = -rect_height // 2 + (i + 1) * (rect_height // (len(self.inputs) + 1))
+                pos = (self.position[0] + x_off, self.position[1] + y_off)
+                positions.append((i, pos))
         return positions
 
     def get_output_positions(self):
         positions = []
-        rect_width, rect_height = 80, 60
-        for i in range(len(self.outputs)):
-            x_offset = rect_width // 2
-            y_offset = -rect_height // 2 + (i + 1) * (rect_height // (len(self.outputs) + 1))
-            pos = (self.position[0] + x_offset, self.position[1] + y_offset)
-            positions.append((i, pos))
+        if self.type in default_gates.keys():
+            circle_not = 0
+            if self.type in ["NOT", "NAND", "NOR", "XNOR"]:
+                circle_not = 1
+            pos = (default_gates[self.type][2][0], default_gates[self.type][2][1])
+            pos = (self.position[0] + pos[0], self.position[1] + pos[1])
+            positions.append((0, pos, circle_not))
+        else:
+            rect_width, rect_height = 80, 60
+            for i in range(len(self.outputs)):
+                x_offset = rect_width // 2
+                y_offset = -rect_height // 2 + (i + 1) * (rect_height // (len(self.outputs) + 1))
+                pos = (self.position[0] + x_offset, self.position[1] + y_offset)
+                positions.append((i, pos, 0))
         return positions
     
     def evaluate(self):
@@ -146,14 +178,16 @@ class Wire:
 
 
 class Level:
-    def __init__(self, name: str, inputs: List[bool], expected: List[bool], allowed_gates: List[str]):
+    def __init__(self, name: str, inputs: List[bool], allowed_gates: List[str], function=None):
         self.name = name
         self.inputs = inputs.copy()
-        self.expected = expected.copy()
+        self.expected = function(inputs)
+        self.current_output = [False] * len(self.expected)
         self.allowed_gates = allowed_gates.copy()
         self.gates: dict[int, Gate] = {}
         self.wires: List[Wire] = []
         self.current_wire: Wire = None
+        self.function = function
     
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
@@ -167,17 +201,20 @@ class Level:
         )]
         self.gates.pop(idx_gate)
 
-    def draw(self, screen, width, height, button_bg, button_hover, gate_font, mouse_pos):
+    def draw(self, screen, width, height, button_bg, button_hover, mouse_pos):
         input_positions = self.get_input_terminals()
         for i, val in enumerate(self.inputs):
+            color = green if val else button_bg
             pygame.draw.circle(screen, white, input_positions[i][1], 12)
-            pygame.draw.circle(screen, button_bg, input_positions[i][1], 10)
-            draw_text(screen, f"{i}: {val}", (10, input_positions[i][1][1] - 13), gate_font)
+            pygame.draw.circle(screen, color, input_positions[i][1], 10)
+            draw_text(screen, f"{val}", (30, input_positions[i][1][1] - 13), gate_font)
         output_positions = self.get_output_terminals(width)
-        for i, val in enumerate(self.expected):
+        for i, val in enumerate(self.current_output):
+            color = green if val else button_bg
             pygame.draw.circle(screen, white, output_positions[i][1], 12)
-            pygame.draw.circle(screen, button_bg, output_positions[i][1], 10)
-            draw_text(screen, f"{i}: {val}", (output_positions[i][1][0] + 20, output_positions[i][1][1] - 13), gate_font)
+            pygame.draw.circle(screen, color, output_positions[i][1], 10)
+            draw_text(screen, f"{val}", (output_positions[i][1][0] + 20, output_positions[i][1][1] - 13), gate_font)
+            draw_text(screen, f"Expected: {self.expected[i]}", (output_positions[i][1][0] + 20, output_positions[i][1][1] + 5), expected_font)
         for gate in self.gates.values():
             gate.update()
             gate.draw(screen, button_hover)
@@ -189,6 +226,8 @@ class Level:
         
         if self.current_wire:
             self.current_wire.draw_one_point(screen, ports, mouse_pos)
+        
+        # Update the current output and expected output
 
     def get_input_terminals(self):
         positions = []
@@ -199,7 +238,7 @@ class Level:
 
     def get_output_terminals(self, width):
         positions = []
-        for i in range(len(self.expected)):
+        for i in range(len(self.current_output)):
             pos = (width - 100, 100 + i * 60 + 3)
             positions.append((i, pos, self.inputs[i]))
         return positions
