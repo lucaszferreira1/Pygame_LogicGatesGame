@@ -38,13 +38,13 @@ levels = [Level("Nível 1", [True, False], ['AND', 'OR', 'NOT', 'XOR', 'NAND', '
             Level("Nível 3", [True, True], ['XOR', 'NOT'], level3_function)]
 
 logic_gates = {
-    'AND': Gate('AND', [False, False], [False], (0, 0), button_bg),
-    'OR': Gate('OR', [False, False], [False], (0, 0), button_bg),
-    'NOT': Gate('NOT', [False], [True], (0, 0), button_bg),
-    'XOR': Gate('XOR', [False, False], [False], (0, 0), button_bg),
-    'NAND': Gate('NAND', [False, False], [False], (0, 0), button_bg),
-    'NOR': Gate('NOR', [False, False], [False], (0, 0), button_bg),
-    "XNOR": Gate("XNOR", [False, False], [False], (0, 0), button_bg),
+    'AND': Gate('AND', [False, False], [False], (0, 0)),
+    'OR': Gate('OR', [False, False], [False], (0, 0)),
+    'NOT': Gate('NOT', [False], [True], (0, 0)),
+    'XOR': Gate('XOR', [False, False], [False], (0, 0)),
+    'NAND': Gate('NAND', [False, False], [False], (0, 0)),
+    'NOR': Gate('NOR', [False, False], [False], (0, 0)),
+    "XNOR": Gate("XNOR", [False, False], [False], (0, 0)),
 }
 
 def play_level(level):
@@ -67,11 +67,11 @@ def play_level(level):
             pygame.draw.rect(screen, white, rect, 2, border_radius=10)
             draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
 
-        level.draw(screen, WIDTH, HEIGHT, button_bg, hover_color, mouse_pos)
+        level.draw(screen, mouse_pos)
 
         if dragging:
             dragging.position = (mouse_pos[0] + offset[0], mouse_pos[1] + offset[1])
-            dragging.draw(screen, hover_color, selected=True)
+            dragging.draw(screen, selected=True)
 
         pygame.display.flip()
 
@@ -98,26 +98,26 @@ def play_level(level):
                 # Right Click
                 elif e.button == 3 and not dragging:
                     clicked = False
-                    for i, pos, val in level.get_input_terminals():
-                        if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 12**2:
+                    for term in level.inputs:
+                        if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < 12**2:
                             if not wiring:
-                                wiring = Wire((i, "TERMINAL_O", 0), None, level.inputs[i])
+                                wiring = Wire((term.i, "TERMINAL_I", 0), None, term.value)
                                 level.current_wire = wiring
                             elif not wiring.from_i:
-                                wiring.from_i = (i, "TERMINAL_O", 0)
-                                wiring.value = val
+                                wiring.from_i = (term.i, "TERMINAL_I", 0)
+                                wiring.value = term.value
                             clicked = True
                             break
                     if not clicked:
-                        for i, pos, val in level.get_output_terminals(WIDTH):
-                            if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 12**2:
-                                has_two = level.terminal_has_two_wires(i)
+                        for term in level.outputs:
+                            if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < 12**2:
+                                has_two = level.terminal_has_two_wires(term.i)
                                 if not has_two:
                                     if not wiring:
-                                        wiring = Wire(None, (i, "TERMINAL_I", 0), level.expected[i])
+                                        wiring = Wire(None, (term.i, "TERMINAL_O", 0), term.value)
                                         level.current_wire = wiring
                                     elif not wiring.to_i:
-                                        wiring.to_i = (i, "TERMINAL_I", 0)
+                                        wiring.to_i = (term.i, "TERMINAL_O", 0)
                                 clicked = True
                                 break
                     if not clicked:
