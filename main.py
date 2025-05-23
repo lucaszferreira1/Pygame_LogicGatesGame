@@ -72,7 +72,7 @@ def play_level(screen, level):
 
         mouse_pos = pygame.mouse.get_pos()
 
-        level.draw(screen, mouse_pos)
+        level.draw(screen, width, height, mouse_pos)
 
         if dragging:
             # Blank out the palette area

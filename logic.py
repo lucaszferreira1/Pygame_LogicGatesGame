@@ -34,9 +34,9 @@ class Terminal:
     def calculate_position(self):
         pos = (0, 0)
         if self.type == "TERMINAL_I":
-            pos = (100, 100 + self.i * 60 + 3)
+            pos = (WIDTH // 8, HEIGHT // 6 + self.i * HEIGHT // 10 + 3)
         elif self.type == "TERMINAL_O":
-            pos = (WIDTH - 100, 100 + self.i * 60 + 3)
+            pos = (WIDTH - WIDTH // 8, HEIGHT // 6 + self.i * HEIGHT // 10 + 3)
         return pos
 
     def __str__(self):
@@ -233,7 +233,7 @@ class Level:
         self.wires: List[Wire] = []
         self.current_wire: Wire = None
         self.function = function
-        self.palette = [(gt, (100 + i * 100, 550)) for i, gt in enumerate(self.allowed_gates)]
+        self.palette = []
 
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
@@ -258,10 +258,16 @@ class Level:
         
         self.gates.pop(idx_gate)
 
-    def draw_palette(self, screen):
-        pygame.draw.rect(screen, (30, 30, 30), (0, 495, 800, 105))
-        pygame.draw.rect(screen, panel_bg, (0, 500, 800, 100), border_radius=15)
-        pygame.draw.rect(screen, white, (0, 500, 800, 100), 2, border_radius=15)
+    def draw_palette(self, screen, width, height):
+        panel_height = int(height * 0.16)
+        panel_y = height - panel_height
+        if not self.palette:
+            self.palette = [(gt, (width // 8 + i * width // 8, panel_y + panel_height // 2)) for i, gt in enumerate(self.allowed_gates)]
+        
+        
+        pygame.draw.rect(screen, (30, 30, 30), (0, panel_y - 5, width, panel_height + 5))
+        pygame.draw.rect(screen, panel_bg, (0, panel_y, width, panel_height), border_radius=15)
+        pygame.draw.rect(screen, white, (0, panel_y, width, panel_height), 2, border_radius=15)
 
         for gt, pos in self.palette:
             rect_width, rect_height = 80, 60
@@ -272,10 +278,10 @@ class Level:
             pygame.draw.rect(screen, white, rect, 2, border_radius=10)
             draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
 
-    def draw(self, screen, mouse_pos):
+    def draw(self, screen, width, height, mouse_pos):
         self.expected = self.function(self.inputs)
         
-        self.draw_palette(screen)
+        self.draw_palette(screen, width, height)
 
         for term in self.inputs:
             color = green if term.value else button_bg
@@ -302,7 +308,7 @@ class Level:
 
     def terminal_has_two_wires(self, i):
         for wire in self.wires:
-            if wire.to_i[1] == "TERMINAL_I" and wire.to_i[0] == i:
+            if wire.to_i[1] == "TERMINAL_O" and wire.to_i[0] == i:
                 return True
         return False
 
