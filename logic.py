@@ -9,6 +9,7 @@ green = (34, 139, 34)
 wire_color_false = (100, 100, 100)
 button_hover = (50, 200, 50)
 button_bg = (40, 40, 40)
+panel_bg = (50, 50, 50)
 
 pygame.font.init()
 gate_font = pygame.font.SysFont('arial', 20)
@@ -62,6 +63,8 @@ class Gate:
     def draw(self, screen, x=-1, y=-1, selected=False):
         if x == -1 and y == -1:
             x, y = self.position
+        
+        # Draw Gate Sprite
         if self.type in default_gates.keys():
             image = pygame.image.load(default_gates[self.type][0])
             image = pygame.transform.scale(image, (self.radius * 2, self.radius * 2))
@@ -230,7 +233,8 @@ class Level:
         self.wires: List[Wire] = []
         self.current_wire: Wire = None
         self.function = function
-    
+        self.palette = [(gt, (100 + i * 100, 550)) for i, gt in enumerate(self.allowed_gates)]
+
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
         self.gates[id_gate] = gate
@@ -254,8 +258,24 @@ class Level:
         
         self.gates.pop(idx_gate)
 
+    def draw_palette(self, screen):
+        pygame.draw.rect(screen, (30, 30, 30), (0, 495, 800, 105))
+        pygame.draw.rect(screen, panel_bg, (0, 500, 800, 100), border_radius=15)
+        pygame.draw.rect(screen, white, (0, 500, 800, 100), 2, border_radius=15)
+
+        for gt, pos in self.palette:
+            rect_width, rect_height = 80, 60
+            rect = pygame.Rect(pos[0] - rect_width // 2, pos[1] - rect_height // 2, rect_width, rect_height)
+            highlight_rect = pygame.Rect(rect.x, rect.y, rect.width, 12)
+            pygame.draw.rect(screen, (60, 60, 60), highlight_rect, border_radius=8)
+            pygame.draw.rect(screen, button_bg, rect, border_radius=10)
+            pygame.draw.rect(screen, white, rect, 2, border_radius=10)
+            draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
+
     def draw(self, screen, mouse_pos):
         self.expected = self.function(self.inputs)
+        
+        self.draw_palette(screen)
 
         for term in self.inputs:
             color = green if term.value else button_bg
