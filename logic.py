@@ -22,18 +22,42 @@ default_gates = {"AND": ["images//AND.png", [[-20, -10], [-20, 10]], [20, 0, 0]]
                  "NAND": ["images//NAND.png", [[-20, -10], [-20, 10]], [20, 0, 1]],
                  "NOR": ["images//NOR.png", [[-20, -10], [-20, 10]], [20, 0, 1]]}
 
+class Terminal:
+    def __init__(self, i: int, type_: str, value: bool=False, isNot: bool=False):
+        self.i: int = i
+        self.type: str = type_
+        self.pos: Tuple[int, int] = self.calculate_position()
+        self.value: bool = value
+        self.isNot: bool = isNot
+
+    def calculate_position(self):
+        pos = (0, 0)
+        if self.type == "TERMINAL_I":
+            pos = (100, 100 + self.i * 60 + 3)
+        elif self.type == "TERMINAL_O":
+            pos = (WIDTH - 100, 100 + self.i * 60 + 3)
+        return pos
+
+    def __str__(self):
+        return f"Terminal(i={self.i}, type={self.type}, pos={self.pos}, value={self.value}, isNot={self.isNot})"
+
 class Gate:
     def __init__(self, gate_type: str, inputs: List[bool], outputs: List[bool], position: Tuple[int,int], color: Tuple[int,int,int]=button_bg):
         self.id = None
         self.type = gate_type.upper()
-        self.inputs = inputs
-        self.outputs = outputs
+        self.inputs = [Terminal(i, "GATE_I", val) for i, val in enumerate(inputs)]
+        self.outputs = [Terminal(i, "GATE_O", val) for i, val in enumerate(outputs)]
         self.position = position
         self.color = color
         self.radius = 30
+
+        if self.type in ["NOT", "NAND", "NOR", "XNOR"]:
+            self.outputs[0].isNot = True
     
     def copy(self):
-        return Gate(gate_type=self.type, inputs=self.inputs[:], outputs=self.outputs, position=self.position, color=self.color)
+        input_values = [term.value for term in self.inputs]
+        output_values = [term.value for term in self.outputs]
+        return Gate(gate_type=self.type, inputs=input_values, outputs=output_values, position=self.position, color=self.color)
 
     def draw(self, screen, x=-1, y=-1, selected=False):
         if x == -1 and y == -1:
@@ -52,73 +76,86 @@ class Gate:
         # Draw input terminals
         input_positions = self.get_input_positions()
         for i, pos in input_positions:
-            color = green if self.inputs[i] else self.color
+            color = green if self.inputs[i].value else self.color
             pygame.draw.rect(screen, white, (pos[0] - 6, pos[1] - 6, 12, 12))
             pygame.draw.rect(screen, color, (pos[0] - 4, pos[1] - 4, 8, 8))
 
         # Draw output terminals
         output_positions = self.get_output_positions()
         for i, pos, circle_not in output_positions:
-            color = green if self.outputs[i] else self.color
+            color = green if self.outputs[i].value else self.color
             if circle_not:
                 pygame.draw.circle(screen, white, pos, 6)
                 pygame.draw.circle(screen, color, pos, 4)
             else:
                 pygame.draw.rect(screen, white, (pos[0] - 6, pos[1] - 6, 12, 12))
                 pygame.draw.rect(screen, color, (pos[0] - 4, pos[1] - 4, 8, 8))
-    
+
     def update(self):
-        self.evaluate()
+        self.evaluate()        
+
+    def udpate_terminal_positions(self):
+        for term in self.inputs:
+            if self.type in default_gates.keys():
+                term.pos = (self.position[0] + default_gates[self.type][1][term.i][0], self.position[1] + default_gates[self.type][1][term.i][1])
+            else: 
+                # Caso hajam gates personalizados
+                break
+        for term in self.outputs:
+            if self.type in default_gates.keys():
+                pos = (default_gates[self.type][2][0], default_gates[self.type][2][1])
+                pos = (self.position[0] + pos[0], self.position[1] + pos[1])
+                term.pos = pos
+            else:
+                # Caso hajam gates personalizados
+                break
 
     def get_input_positions(self):
         positions = []
         if self.type in default_gates.keys():
-            for i, pos in enumerate(default_gates[self.type][1]):
-                positions.append((i, (self.position[0] + pos[0], self.position[1] + pos[1])))
+            for term in self.inputs:
+                positions.append((term.i, term.pos))
         else:
             rect_width, rect_height = 80, 60
             for i in range(len(self.inputs)):
                 x_off = -rect_width // 2
                 y_off = -rect_height // 2 + (i + 1) * (rect_height // (len(self.inputs) + 1))
                 pos = (self.position[0] + x_off, self.position[1] + y_off)
+                self.inputs[i].pos = pos
                 positions.append((i, pos))
         return positions
 
     def get_output_positions(self):
         positions = []
         if self.type in default_gates.keys():
-            circle_not = 0
-            if self.type in ["NOT", "NAND", "NOR", "XNOR"]:
-                circle_not = 1
-            pos = (default_gates[self.type][2][0], default_gates[self.type][2][1])
-            pos = (self.position[0] + pos[0], self.position[1] + pos[1])
-            positions.append((0, pos, circle_not))
+            term = self.outputs[0]
+            positions.append((term.i, term.pos, term.isNot))
         else:
             rect_width, rect_height = 80, 60
             for i in range(len(self.outputs)):
                 x_offset = rect_width // 2
                 y_offset = -rect_height // 2 + (i + 1) * (rect_height // (len(self.outputs) + 1))
                 pos = (self.position[0] + x_offset, self.position[1] + y_offset)
+                self.outputs[i].pos = pos
                 positions.append((i, pos, 0))
         return positions
     
     def evaluate(self):
         match self.type:
             case "AND":
-                self.outputs = [all(self.inputs)]
+                self.outputs[0].value = all([term.value for term in self.inputs])
             case "OR":
-                self.outputs = [any(self.inputs)]
+                self.outputs[0].value = any([term.value for term in self.inputs])
             case "NOT":
-                if len(self.inputs) == 1:
-                    self.outputs = [not self.inputs[0]]
+                self.outputs[0].value = not self.inputs[0].value
             case "NAND":
-                self.outputs = [not all(self.inputs)]
+                self.outputs[0].value = not all([term.value for term in self.inputs])
             case "NOR":
-                self.outputs = [not any(self.inputs)]
+                self.outputs[0].value = not any([term.value for term in self.inputs])
             case "XOR":
-                self.outputs = [self.inputs[0] != self.inputs[1]] if len(self.inputs) == 2 else [False]
+                self.outputs[0].value = self.inputs[0].value != self.inputs[1].value if len(self.inputs) == 2 else False
             case "XNOR":
-                self.outputs = [self.inputs[0] == self.inputs[1]] if len(self.inputs) == 2 else [False]
+                self.outputs[0].value = self.inputs[0].value == self.inputs[1].value if len(self.inputs) == 2 else False
             case _:
                 raise ValueError(f"Unsupported gate type: {self.type}")
     
@@ -154,10 +191,10 @@ class Wire:
         value = self.to_i if isTo else self.from_i
         if value[1] == "GATE_I":
             gate = ports["GATE"][value[0]]
-            pos = gate.get_input_positions()[value[2]][1]
+            pos = gate.inputs[value[2]].pos
         elif value[1] == "GATE_O":
             gate = ports["GATE"][value[0]]
-            pos = gate.get_output_positions()[value[2]][1]
+            pos = gate.outputs[value[2]].pos
         else:
             pos = ports[value[1]][value[0]].pos
         return pos
@@ -165,7 +202,7 @@ class Wire:
     def update_own_value(self, ports):
         if self.from_i[1] == "GATE_O":
             gate = ports["GATE"][self.from_i[0]]
-            self.value = gate.outputs[self.from_i[2]]
+            self.value = gate.outputs[self.from_i[2]].value
         elif self.from_i[1] == "TERMINAL_I":
             term = ports["TERMINAL_I"][self.from_i[0]]
             self.value = term.value
@@ -173,7 +210,7 @@ class Wire:
     def set_value_to_out(self, ports):
         if self.to_i[1] == "GATE_I":
             gate = ports["GATE"][self.to_i[0]]
-            gate.inputs[self.to_i[2]] = self.value
+            gate.inputs[self.to_i[2]].value = self.value
         elif self.to_i[1] == "TERMINAL_O":
             term = ports["TERMINAL_O"][self.to_i[0]]
             term.value = self.value
@@ -181,25 +218,13 @@ class Wire:
     def __str__(self):
         return f"Wire(from={self.from_i}, to={self.to_i}, value={self.value})"
 
-class Terminal:
-    def __init__(self, i: int, isIn=True, value=False):
-        self.i = i
-        self.pos = self.calculate_position(i, isIn)
-        self.value = value
-
-    def calculate_position(self, i, isIn):
-        return (100, 100 + i * 60 + 3) if isIn else (WIDTH - 100, 100 + i * 60 + 3)
-
-    def __str__(self):
-        return f"Terminal(i={self.i}, pos={self.pos}, value={self.value})"
-
 
 class Level:
     def __init__(self, name: str, inputs: List[bool], allowed_gates: List[str], function=None):
         self.name = name
-        self.inputs = [Terminal(i, True, val) for i, val in enumerate(inputs)]
+        self.inputs = [Terminal(i, "TERMINAL_I", val) for i, val in enumerate(inputs)]
         self.expected = function(inputs)
-        self.outputs = [Terminal(i, False) for i in range(len(self.expected))]
+        self.outputs = [Terminal(i, "TERMINAL_O") for i in range(len(self.expected))]
         self.allowed_gates = allowed_gates.copy()
         self.gates: dict[int, Gate] = {}
         self.wires: List[Wire] = []
@@ -221,7 +246,7 @@ class Level:
         for wire in wires:
             if wire.to_i[1] == "GATE_I":
                 gate = self.gates[wire.to_i[0]]
-                gate.inputs[wire.to_i[2]] = False
+                gate.inputs[wire.to_i[2]].value = False
             elif wire.to_i[1] == "TERMINAL_O":
                 term = self.outputs[wire.to_i[0]]
                 term.value = False
@@ -254,8 +279,6 @@ class Level:
         
         if self.current_wire:
             self.current_wire.draw_one_point(screen, ports, mouse_pos)
-        
-        # Update the current output and expected outputs
 
     def terminal_has_two_wires(self, i):
         for wire in self.wires:

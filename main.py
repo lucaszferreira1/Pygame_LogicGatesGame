@@ -71,6 +71,7 @@ def play_level(level):
 
         if dragging:
             dragging.position = (mouse_pos[0] + offset[0], mouse_pos[1] + offset[1])
+            dragging.udpate_terminal_positions()
             dragging.draw(screen, selected=True)
 
         pygame.display.flip()
@@ -140,10 +141,10 @@ def play_level(level):
                             for i, pos, ignore in output_terminals:
                                 if (mouse_pos[0] - pos[0])**2 + (mouse_pos[1] - pos[1])**2 < 8**2:
                                     if not wiring:
-                                        wiring = Wire((gate.id, "GATE_O", i), None, gate.outputs[i])
+                                        wiring = Wire((gate.id, "GATE_O", i), None, gate.outputs[i].value)
                                         level.current_wire = wiring
                                     elif not wiring.from_i:
-                                        wiring.from_i = (gate.id, "GATE_O", i, gate.outputs[i])
+                                        wiring.from_i = (gate.id, "GATE_O", i, gate.outputs[i].value)
                                     clicked = True
                                     break
                             if clicked:
