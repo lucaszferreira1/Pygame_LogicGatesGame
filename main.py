@@ -39,9 +39,9 @@ def level3_function(inputs):
     return [inputs[0] ^ inputs[1]]
 
 
-levels = [Level("Nível 1", [True, False], ['AND', 'OR', 'NOT', 'XOR', 'NAND', 'NOR', 'XNOR'], level1_function),
-            Level("Nível 2", [False, False, True], ['AND', 'NOT', 'OR'], level2_function),
-            Level("Nível 3", [True, True], ['XOR', 'NOT'], level3_function)]
+levels = [Level("Nível 1", [True, False], {'AND': -1, 'OR': 0, 'NOT': 1, 'XOR': 1, 'NAND': 1, 'NOR': 1, 'XNOR': 1}, level1_function),
+            Level("Nível 2", [False, False, True], {'AND': 1, 'NOT': 1, 'OR': 1}, level2_function),
+            Level("Nível 3", [True, True], {'XOR': 1, 'NOT': 1}, level3_function)]
 
 logic_gates = {
     'AND': Gate('AND', [False, False], [False], (0, 0)),
@@ -99,9 +99,12 @@ def play_level(screen, level):
                 if e.button == 1 and not dragging and not wiring:
                     for gt, pos in level.palette:
                         if abs(mouse_pos[0] - pos[0]) < width * 0.05 and abs(mouse_pos[1] - pos[1]) < height * 0.05:
+                            if level.allowed_gates[gt] == 0:
+                                continue
                             new_gate = logic_gates[gt].copy()
                             new_gate.position = mouse_pos
                             level.add_gate(new_gate, count_gates)
+                            level.allowed_gates[gt] -= 1
                             count_gates += 1
                             dragging = new_gate
                             offset = (new_gate.position[0] - mouse_pos[0], new_gate.position[1] - mouse_pos[1])
@@ -177,6 +180,7 @@ def play_level(screen, level):
                 if e.button == 1:
                     if dragging and dragging.position[1] > height - palette_height:
                         level.remove_gate(dragging)
+                        level.allowed_gates[dragging.type] += 1
                     dragging = None
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:

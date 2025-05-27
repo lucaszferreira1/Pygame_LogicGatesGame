@@ -13,6 +13,7 @@ panel_bg = (50, 50, 50)
 
 pygame.font.init()
 gate_font = pygame.font.SysFont('arial', 20)
+quantity_font = pygame.font.SysFont('arial', 14)
 expected_font = pygame.font.SysFont('arial', 10)
 
 default_gates = {"AND": ["images//AND.png", [[-20, -10], [-20, 10]], [20, 0, 0]],
@@ -223,7 +224,7 @@ class Wire:
 
 
 class Level:
-    def __init__(self, name: str, inputs: List[bool], allowed_gates: List[str], function=None):
+    def __init__(self, name: str, inputs: List[bool], allowed_gates: dict[str, int], function=None):
         self.name = name
         self.inputs = [Terminal(i, "TERMINAL_I", val) for i, val in enumerate(inputs)]
         self.expected = function(inputs)
@@ -262,21 +263,32 @@ class Level:
         panel_height = int(height * 0.16)
         panel_y = height - panel_height
         if not self.palette:
-            self.palette = [(gt, (width // 8 + i * width // 8, panel_y + panel_height // 2)) for i, gt in enumerate(self.allowed_gates)]
-        
-        
+            self.palette = [(gt, (width // 8 + i * width // 8, panel_y + panel_height // 2)) for i, gt in enumerate(self.allowed_gates.keys())]
+
         pygame.draw.rect(screen, (30, 30, 30), (0, panel_y - 5, width, panel_height + 5))
         pygame.draw.rect(screen, panel_bg, (0, panel_y, width, panel_height), border_radius=15)
         pygame.draw.rect(screen, white, (0, panel_y, width, panel_height), 2, border_radius=15)
 
         for gt, pos in self.palette:
+            value = self.allowed_gates.get(gt, -1)
+
             rect_width, rect_height = 80, 60
             rect = pygame.Rect(pos[0] - rect_width // 2, pos[1] - rect_height // 2, rect_width, rect_height)
             highlight_rect = pygame.Rect(rect.x, rect.y, rect.width, 12)
             pygame.draw.rect(screen, (60, 60, 60), highlight_rect, border_radius=8)
             pygame.draw.rect(screen, button_bg, rect, border_radius=10)
-            pygame.draw.rect(screen, white, rect, 2, border_radius=10)
+
+            # Border color logic
+            border_color = (255, 0, 0) if value == 0 else white
+            pygame.draw.rect(screen, border_color, rect, 2, border_radius=10)
+
             draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
+
+            # Draw number if value > 1
+            if value > 0:
+                num_text = str(value)
+                num_pos = (rect.right - quantity_font.size(num_text)[0] - 6, rect.bottom - quantity_font.size(num_text)[1] - 4)
+                draw_text(screen, num_text, num_pos, quantity_font)
 
     def draw(self, screen, width, height, mouse_pos):
         self.expected = self.function(self.inputs)
