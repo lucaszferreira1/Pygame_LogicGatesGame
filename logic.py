@@ -236,6 +236,7 @@ class Level:
         self.function = function
         self.palette = []
         self.current_function = None
+        self.completed = False
 
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
@@ -330,6 +331,24 @@ class Level:
                 if wire.to_i[2] == i:
                     return True
         return False
+    
+    def cycle_inputs(self, forward=True):
+        n = len(self.inputs)
+        if n == 0:
+            return
+        # Convert current input values to an integer
+        current = 0
+        for i, term in enumerate(self.inputs):
+            if term.value:
+                current |= (1 << (n - i - 1))
+        # Cycle to next or previous value
+        if forward:
+            next_val = (current + 1) % (2 ** n)
+        else:
+            next_val = (current - 1) % (2 ** n)
+        # Set input values according to next_val bits
+        for i in range(n):
+            self.inputs[i].value = bool((next_val >> (n - i - 1)) & 1)
     
     def evaluate(self):
         if self.current_function is None:

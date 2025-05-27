@@ -29,23 +29,23 @@ menu_font = get_scaled_font('arial', 0.04)
 gate_font = get_scaled_font('arial', 0.035)
 terminal_font = get_scaled_font('arial', 0.015)
 
-def level0_function(inputs):
+def level1_function(inputs):
     return [not inputs[0]]
 
-def level1_function(inputs):
+def level2_function(inputs):
     return [inputs[0] or inputs[1]]
 
-def level2_function(inputs):
+def level3_function(inputs):
     return [inputs[0] and inputs[1]]
 
-def level3_function(inputs):
+def level4_function(inputs):
     return [inputs[0] ^ inputs[1]]
 
 
-levels = [  Level("Nível 0", [False], {'NOT': 1}, level0_function),
-            Level("Nível 1", [True, False], {'AND': 0, 'OR': 1, 'NOT': 0, 'XOR': 0, 'NAND': 0, 'NOR': 0, 'XNOR': 0}, level1_function),
-            Level("Nível 2", [False, False, True], {'AND': 1, 'NOT': 1, 'OR': 1}, level2_function),
-            Level("Nível 3", [True, True], {'XOR': 1, 'NOT': 1}, level3_function)]
+levels = [  Level("NOT", [False], {'NOT': 1}, level1_function),
+            Level("OR", [True, False], {'OR': 1}, level2_function),
+            Level("AND", [True, False], {'AND': 1}, level3_function),
+            Level("XOR", [True, True], {'XOR': 1}, level4_function)]
 
 logic_gates = {
     'AND': Gate('AND', [False, False], [False], (0, 0)),
@@ -194,10 +194,15 @@ def play_level(screen, level):
                         dragging = None
                     else:
                         return
+                elif e.key == pygame.K_LEFT:
+                    level.cycle_inputs(False)
+                elif e.key == pygame.K_RIGHT:
+                    level.cycle_inputs(True)
                 elif e.key == pygame.K_RETURN:
                     level.compile()
                     if level.evaluate():
-                        # Display success screen with backboard
+                        level.completed = True
+
                         backboard_rect = pygame.Rect(width // 4, height // 2 - height // 8, width - width // 2, height // 4)
                         pygame.draw.rect(screen, (30, 30, 30), backboard_rect, border_radius=20)
                         pygame.draw.rect(screen, (60, 60, 60), backboard_rect, 4, border_radius=20)
@@ -205,29 +210,38 @@ def play_level(screen, level):
                         success_text = success_font.render("Nível Completo!", True, green)
                         screen.blit(success_text, success_text.get_rect(center=(width // 2, height // 2)))
                         pygame.display.flip()
-                        pygame.time.wait(5000)
+                        pygame.time.wait(2500)
                         return
         
         clock.tick(240)
 
 
 def history_menu():
-    labels = [lvl.name for lvl in levels]
-
     # Grid
     columns = 3
     x_spacing = WIDTH // (columns + 1)
     y_start = HEIGHT // 3
-    y_spacing = HEIGHT // (len(labels) // columns + 1)
+    y_spacing = y_start // (len(levels) // columns + 1)
 
     # Buttons
     level_buttons = []
-    for idx, lvl in enumerate(labels):
+    unlocked_levels = 1  # Always unlock the first level
+
+    # Check how many levels are completed
+    for idx, lvl in enumerate(levels):
+        if idx == 0:
+            continue  # First level always unlocked
+        if levels[idx - 1].completed:
+            unlocked_levels = idx + 1
+        else:
+            break
+
+    for idx, lvl in enumerate(levels[:unlocked_levels]):
         col = idx % columns
         row = idx // columns
         x = x_spacing * (col + 1)
         y = y_start + row * y_spacing
-        level_buttons.append(Button(lvl, menu_font, x, y, 50, button_bg, hover_color))
+        level_buttons.append(Button(lvl.name, menu_font, x, y, 50, button_bg, hover_color))
 
     voltar_button = Button("Voltar", menu_font, WIDTH // 2, HEIGHT - (HEIGHT * 0.1), 50, button_bg, hover_color)
     selected = 0
