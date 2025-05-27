@@ -29,6 +29,9 @@ menu_font = get_scaled_font('arial', 0.04)
 gate_font = get_scaled_font('arial', 0.035)
 terminal_font = get_scaled_font('arial', 0.015)
 
+def level0_function(inputs):
+    return [not inputs[0]]
+
 def level1_function(inputs):
     return [inputs[0] or inputs[1]]
 
@@ -39,7 +42,8 @@ def level3_function(inputs):
     return [inputs[0] ^ inputs[1]]
 
 
-levels = [Level("Nível 1", [True, False], {'AND': -1, 'OR': 0, 'NOT': 1, 'XOR': 1, 'NAND': 1, 'NOR': 1, 'XNOR': 1}, level1_function),
+levels = [  Level("Nível 0", [False], {'NOT': 1}, level0_function),
+            Level("Nível 1", [True, False], {'AND': 0, 'OR': 1, 'NOT': 0, 'XOR': 0, 'NAND': 0, 'NOR': 0, 'XNOR': 0}, level1_function),
             Level("Nível 2", [False, False, True], {'AND': 1, 'NOT': 1, 'OR': 1}, level2_function),
             Level("Nível 3", [True, True], {'XOR': 1, 'NOT': 1}, level3_function)]
 
@@ -75,7 +79,6 @@ def play_level(screen, level):
         level.draw(screen, width, height, mouse_pos)
 
         if dragging:
-            # Blank out the palette area
             palette_rect = pygame.Rect(0, height - palette_height, width, palette_height)
             pygame.draw.rect(screen, background_color, palette_rect)
             image = pygame.image.load("images/trash.png").convert_alpha()
@@ -191,7 +194,20 @@ def play_level(screen, level):
                         dragging = None
                     else:
                         return
-
+                elif e.key == pygame.K_RETURN:
+                    level.compile()
+                    if level.evaluate():
+                        # Display success screen with backboard
+                        backboard_rect = pygame.Rect(width // 4, height // 2 - height // 8, width - width // 2, height // 4)
+                        pygame.draw.rect(screen, (30, 30, 30), backboard_rect, border_radius=20)
+                        pygame.draw.rect(screen, (60, 60, 60), backboard_rect, 4, border_radius=20)
+                        success_font = get_scaled_font('arial', 0.08)
+                        success_text = success_font.render("Nível Completo!", True, green)
+                        screen.blit(success_text, success_text.get_rect(center=(width // 2, height // 2)))
+                        pygame.display.flip()
+                        pygame.time.wait(5000)
+                        return
+        
         clock.tick(240)
 
 

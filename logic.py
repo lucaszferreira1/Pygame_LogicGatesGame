@@ -235,6 +235,7 @@ class Level:
         self.current_wire: Wire = None
         self.function = function
         self.palette = []
+        self.current_function = None
 
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
@@ -278,21 +279,19 @@ class Level:
             pygame.draw.rect(screen, (60, 60, 60), highlight_rect, border_radius=8)
             pygame.draw.rect(screen, button_bg, rect, border_radius=10)
 
-            # Border color logic
             border_color = (255, 0, 0) if value == 0 else white
             pygame.draw.rect(screen, border_color, rect, 2, border_radius=10)
 
             draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
 
-            # Draw number if value > 1
             if value > 0:
                 num_text = str(value)
                 num_pos = (rect.right - quantity_font.size(num_text)[0] - 6, rect.bottom - quantity_font.size(num_text)[1] - 4)
                 draw_text(screen, num_text, num_pos, quantity_font)
 
     def draw(self, screen, width, height, mouse_pos):
-        self.expected = self.function(self.inputs)
-        
+        self.expected = self.function([term.value for term in self.inputs])
+
         self.draw_palette(screen, width, height)
 
         for term in self.inputs:
@@ -305,7 +304,7 @@ class Level:
             pygame.draw.circle(screen, white, term.pos, 12)
             pygame.draw.circle(screen, color, term.pos, 10)
             draw_text(screen, f"{term.value}", (term.pos[0] + 20, term.pos[1] - 13), gate_font)
-            draw_text(screen, f"Expected: {term.value}", (term.pos[0] + 20, term.pos[1] + 5), expected_font)
+            draw_text(screen, f"Expected: {self.expected[term.i]}", (term.pos[0] + 20, term.pos[1] + 5), expected_font)
         for gate in self.gates.values():
             gate.update()
             gate.draw(screen)
@@ -317,6 +316,7 @@ class Level:
         
         if self.current_wire:
             self.current_wire.draw_one_point(screen, ports, mouse_pos)
+        
 
     def terminal_has_two_wires(self, i):
         for wire in self.wires:
@@ -330,3 +330,87 @@ class Level:
                 if wire.to_i[2] == i:
                     return True
         return False
+    
+    def evaluate(self):
+        if self.current_function is None:
+            return False
+        n = len(self.inputs)
+        for i in range(2 ** n):
+            x = [(i >> bit) & 1 == 1 for bit in range(n)]
+            expected = self.function(x)
+            actual = self.current_function(x)
+            if expected != actual:
+                return False
+        return True
+
+    def compile(self):
+        var_map = {}
+        expr_map = {}
+
+        for i, term in enumerate(self.inputs):
+            var_map[("TERMINAL_I", i)] = f"x[{i}]"
+
+        for gid, gate in self.gates.items():
+            var_map[("GATE_O", gid, 0)] = f"g{gid}"
+
+        for i, term in enumerate(self.outputs):
+            var_map[("TERMINAL_O", i)] = f"y{i}"
+
+        input_sources = {}
+        for wire in self.wires:
+            if wire.to_i[1] == "GATE_I":
+                input_sources[(wire.to_i[0], wire.to_i[2])] = wire.from_i
+            elif wire.to_i[1] == "TERMINAL_O":
+                input_sources[("OUT", wire.to_i[0])] = wire.from_i
+
+        def build_expr_for_gate(gid):
+            gate = self.gates[gid]
+            input_exprs = []
+            for i, _ in enumerate(gate.inputs):
+                src = input_sources.get((gid, i))
+                if src is None:
+                    input_exprs.append("False")
+                elif src[1] == "TERMINAL_I":
+                    input_exprs.append(var_map[(src[1], src[0])])
+                elif src[1] == "GATE_O":
+                    input_exprs.append(build_expr_for_gate(src[0]))
+                else:
+                    input_exprs.append("False")
+            t = gate.type
+            if t == "AND":
+                expr = f"({' and '.join(input_exprs)})"
+            elif t == "OR":
+                expr = f"({' or '.join(input_exprs)})"
+            elif t == "NOT":
+                expr = f"(not {input_exprs[0]})"
+            elif t == "NAND":
+                expr = f"(not ({' and '.join(input_exprs)}))"
+            elif t == "NOR":
+                expr = f"(not ({' or '.join(input_exprs)}))"
+            elif t == "XOR":
+                expr = f"({input_exprs[0]} != {input_exprs[1]})"
+            elif t == "XNOR":
+                expr = f"({input_exprs[0]} == {input_exprs[1]})"
+            else:
+                expr = "False"
+            expr_map[gid] = expr
+            return expr
+
+        output_exprs = []
+        for i, _ in enumerate(self.outputs):
+            src = input_sources.get(("OUT", i))
+            if src is None:
+                output_exprs.append("False")
+            elif src[1] == "TERMINAL_I":
+                output_exprs.append(var_map[(src[1], src[0])])
+            elif src[1] == "GATE_O":
+                output_exprs.append(build_expr_for_gate(src[0]))
+            else:
+                output_exprs.append("False")
+
+        body = f"return [{', '.join(output_exprs)}]"
+        func_str = f"def logic_func(x):\n    {body}"
+
+        local_ns = {}
+        exec(func_str, {}, local_ns)
+        self.current_function = local_ns["logic_func"]
