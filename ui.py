@@ -60,7 +60,7 @@ class Button:
 
 def draw_text(screen, text, pos, font, color=(255, 255, 255)):
     txt = font.render(text, True, color)
-    screen.blit(txt, pos)
+    screen.blit(txt, (int(pos[0]), int(pos[1])))
 
 def draw_background(screen, color, pattern_offset=0):
     # Fill with a vertical gradient from color to a darker shade

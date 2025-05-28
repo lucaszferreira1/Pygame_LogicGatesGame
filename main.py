@@ -29,6 +29,9 @@ menu_font = get_scaled_font('arial', 0.04)
 gate_font = get_scaled_font('arial', 0.035)
 terminal_font = get_scaled_font('arial', 0.015)
 
+def level0_function(inputs):
+    return [inputs[0]]
+
 def level1_function(inputs):
     return [not inputs[0]]
 
@@ -68,7 +71,8 @@ def gate_half_adder(inputs):
     carry_out = inputs[0] and inputs[1]
     return [sum_bit, carry_out]
 
-levels = [  Level("NOT", 1, {'NOT': 1}, level1_function),
+levels = [  Level("INTRO", 1, {}, level0_function),
+            Level("NOT", 1, {'NOT': 1}, level1_function),
             Level("OR", 2, {'OR': 1}, level2_function),
             Level("AND", 2, {'AND': 1}, level3_function),
             Level("NOR", 2, {'OR': 1, 'NOT': 1}, level4_function),
@@ -111,7 +115,7 @@ def play_level(screen, level):
         mouse_pos = pygame.mouse.get_pos()
 
         level.draw(screen, width, height, mouse_pos)
-
+        
         if dragging:
             palette_rect = pygame.Rect(0, height - palette_height, width, palette_height)
             pygame.draw.rect(screen, background_color, palette_rect)
@@ -150,6 +154,10 @@ def play_level(screen, level):
                         if (mouse_pos[0] - gate.position[0])**2 + (mouse_pos[1] - gate.position[1])**2 < gate.radius**2:
                             dragging = gate
                             offset = (gate.position[0] - mouse_pos[0], gate.position[1] - mouse_pos[1])
+                            break
+                    for term in level.inputs:
+                        if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < terminal_radius**2:
+                            term.value = not term.value
                             break
                 # Right Click
                 elif e.button == 3 and not dragging:
@@ -259,7 +267,7 @@ def history_menu():
 
     # Buttons
     level_buttons = []
-    unlocked_levels = 20
+    unlocked_levels = 50 # Trocar o valor para 1 na entrega
 
     for idx, lvl in enumerate(levels):
         if idx == 0:
@@ -321,7 +329,7 @@ def history_menu():
                 if event.key == pygame.K_ESCAPE:
                     return None
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if selected < len(levels):
+                if selected < unlocked_levels:
                     return levels[selected]
                 else:
                     return None

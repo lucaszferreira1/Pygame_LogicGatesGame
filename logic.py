@@ -63,11 +63,14 @@ class Gate:
         if x == -1 and y == -1:
             x, y = self.position
         
-        # Draw Gate Sprite
+        # Draw Gate Sprite (optimized image loading)
         if self.type in default_gates.keys():
-            image = pygame.image.load(default_gates[self.type][0])
-            image = pygame.transform.scale(image, (self.radius * 2, self.radius * 2))
-            screen.blit(image, (x - self.radius, y - self.radius))
+            # Cache loaded and scaled images to avoid reloading every frame
+            if not hasattr(self, '_cached_image'):
+                image = pygame.image.load(default_gates[self.type][0]).convert_alpha()
+                image = pygame.transform.smoothscale(image, (self.radius * 2, self.radius * 2))
+                self._cached_image = image
+            screen.blit(self._cached_image, (x - self.radius, y - self.radius))
         else:
             rect_width, rect_height = 80, 60
             rect = pygame.Rect(self.position[0] - rect_width // 2, self.position[1] - rect_height // 2, rect_width, rect_height)
@@ -287,7 +290,7 @@ class Level:
         for gt, pos in self.palette:
             value = self.allowed_gates.get(gt, -1)
 
-            rect_width, rect_height = 80, 60
+            rect_width, rect_height = width * 0.1, height * 0.1
             rect = pygame.Rect(pos[0] - rect_width // 2, pos[1] - rect_height // 2, rect_width, rect_height)
             highlight_rect = pygame.Rect(rect.x, rect.y, rect.width, 12)
             pygame.draw.rect(screen, (60, 60, 60), highlight_rect, border_radius=8)
