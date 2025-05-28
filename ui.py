@@ -82,3 +82,10 @@ def draw_background(screen, color, pattern_offset=0):
     for x in range(-height, width, spacing):
         pygame.draw.line(pattern_surf, pattern_color, (x + offset, 0), (x + height + offset, height), 2)
     screen.blit(pattern_surf, (0, 0))
+
+def draw_success_message(screen, width, height, font, color):
+    backboard_rect = pygame.Rect(width // 4, height // 2 - height // 8, width - width // 2, height // 4)
+    pygame.draw.rect(screen, (30, 30, 30), backboard_rect, border_radius=20)
+    pygame.draw.rect(screen, (60, 60, 60), backboard_rect, 4, border_radius=20)
+    success_text = font.render("Nível Completo!", True, color)
+    screen.blit(success_text, success_text.get_rect(center=(width // 2, height // 2)))
