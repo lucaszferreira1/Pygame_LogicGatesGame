@@ -169,43 +169,53 @@ def play_level(screen, level):
                 WIDTH, HEIGHT = e.w, e.h
                 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
             elif e.type == pygame.MOUSEBUTTONDOWN:
-                if e.button == 1 and not dragging and not wiring:
-                    if run_btn_hover:
-                        level.compile()
-                        if level.evaluate():
-                            level.completed = True
-                            draw_success_message(screen, width, height, get_scaled_font('arial', 0.08), green)
-                            pygame.display.flip()
-                            pygame.time.wait(2500)
+                if e.button == 1 :
+                    # Play click sound
+                    try:
+                        click_sound = pygame.mixer.Sound("sounds/click.wav")
+                        click_sound.play()
+                    except Exception:
+                        pass
+                    if not dragging and not wiring:
+                        if run_btn_hover:
+                            level.compile()
+                            if level.evaluate():
+                                level.completed = True
+                                draw_success_message(screen, width, height, get_scaled_font('arial', 0.08), green)
+                                pygame.display.flip()
+                                pygame.time.wait(2500)
+                                return
+                            else:
+                                break
+                        elif truth_btn_hover:
+                            truth_table = not truth_table
+                            break
+                        elif quit_btn_hover:
+                            wiring = None
+                            dragging = None
+                            truth_table = False
                             return
-                        else:
-                            break
-                    elif truth_btn_hover:
-                        truth_table = not truth_table
-                        break
-                    elif quit_btn_hover:
-                        return
-                    for gt, pos in level.palette:
-                        if abs(mouse_pos[0] - pos[0]) < width * 0.05 and abs(mouse_pos[1] - pos[1]) < height * 0.05:
-                            if level.allowed_gates[gt] == 0:
-                                continue
-                            new_gate = logic_gates[gt].copy()
-                            new_gate.position = mouse_pos
-                            level.add_gate(new_gate, count_gates)
-                            level.allowed_gates[gt] -= 1
-                            count_gates += 1
-                            dragging = new_gate
-                            offset = (new_gate.position[0] - mouse_pos[0], new_gate.position[1] - mouse_pos[1])
-                            break
-                    for gate in level.gates.values():
-                        if (mouse_pos[0] - gate.position[0])**2 + (mouse_pos[1] - gate.position[1])**2 < gate.radius**2:
-                            dragging = gate
-                            offset = (gate.position[0] - mouse_pos[0], gate.position[1] - mouse_pos[1])
-                            break
-                    for term in level.inputs:
-                        if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < terminal_radius**2:
-                            term.value = not term.value
-                            break
+                        for gt, pos in level.palette:
+                            if abs(mouse_pos[0] - pos[0]) < width * 0.05 and abs(mouse_pos[1] - pos[1]) < height * 0.05:
+                                if level.allowed_gates[gt] == 0:
+                                    continue
+                                new_gate = logic_gates[gt].copy()
+                                new_gate.position = mouse_pos
+                                level.add_gate(new_gate, count_gates)
+                                level.allowed_gates[gt] -= 1
+                                count_gates += 1
+                                dragging = new_gate
+                                offset = (new_gate.position[0] - mouse_pos[0], new_gate.position[1] - mouse_pos[1])
+                                break
+                        for gate in level.gates.values():
+                            if (mouse_pos[0] - gate.position[0])**2 + (mouse_pos[1] - gate.position[1])**2 < gate.radius**2:
+                                dragging = gate
+                                offset = (gate.position[0] - mouse_pos[0], gate.position[1] - mouse_pos[1])
+                                break
+                        for term in level.inputs:
+                            if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < terminal_radius**2:
+                                term.value = not term.value
+                                break
                 elif e.button == 3 and not dragging:
                     def check_terminal(term, kind, idx, attr):
                         if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < terminal_radius**2:
@@ -284,6 +294,7 @@ def play_level(screen, level):
                     dragging = None
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:
+                    truth_table = False
                     if wiring:
                         wiring = None
                         level.current_wire = None
@@ -293,11 +304,14 @@ def play_level(screen, level):
                         return
                 elif e.key == pygame.K_t:
                     truth_table = not truth_table
-                elif e.key == pygame.K_LEFT:
+                elif e.key == pygame.K_LEFT or e.key == pygame.K_a:
                     level.cycle_inputs(False)
-                elif e.key == pygame.K_RIGHT:
+                elif e.key == pygame.K_RIGHT or e.key == pygame.K_d:
                     level.cycle_inputs(True)
-                elif e.key == pygame.K_RETURN:
+                elif e.key == pygame.K_RETURN or e.key == pygame.K_SPACE:
+                    wiring = None
+                    dragging = None
+                    truth_table = False
                     level.compile()
                     if level.evaluate():
                         level.completed = True
@@ -305,6 +319,12 @@ def play_level(screen, level):
                         pygame.display.flip()
                         pygame.time.wait(2500)
                         return
+                elif e.key == pygame.K_BACKSPACE:
+                    if level.gates:
+                        last_gate_id = max(level.gates.keys())
+                        last_gate = level.gates[last_gate_id]
+                        level.remove_gate(last_gate)
+                        level.allowed_gates[last_gate.type] += 1
 
         clock.tick(240)
 
