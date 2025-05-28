@@ -125,12 +125,12 @@ def draw_truth_table_button(screen, pos, color, button_size=56, hover=True):
     rect = pygame.Rect(pos[0], pos[1], button_size, button_size)
 
     # Change colors if hovered
-    bg_color = (40, 180, 90)
+    bg_color = (120, 120, 120)
     if hover:
-        border_color = (40, 120, 60)
+        border_color = (150, 150, 150)
         icon_color = (color[0], color[1], color[2], 200)
     else:
-        border_color = (20, 90, 45)
+        border_color = (100, 100, 100)
         icon_color = color
 
     pygame.draw.rect(screen, bg_color, rect, border_radius=14)
@@ -152,3 +152,38 @@ def draw_truth_table_button(screen, pos, color, button_size=56, hover=True):
                 cell_height - 4
             )
             pygame.draw.rect(screen, icon_color, cell_rect)
+
+def draw_quit_button(screen, pos, color, button_size=56, hover=True):
+    rect = pygame.Rect(pos[0], pos[1], button_size, button_size)
+
+    # Change colors if hovered
+    bg_color = (180, 40, 40)
+    if hover:
+        border_color = (120, 30, 30)
+        icon_color = (color[0], color[1], color[2], 200)
+    else:
+        border_color = (90, 20, 20)
+        icon_color = color
+
+    pygame.draw.rect(screen, bg_color, rect, border_radius=14)
+    pygame.draw.rect(screen, border_color, rect, 4, border_radius=14)
+
+    # Draw the quit icon (a left-pointing arrow) with a smaller tip and longer shaft
+    arrow_width = button_size * 0.65  # Increased for less x condensation
+    arrow_height = button_size * 0.32
+    cx, cy = rect.center
+
+    # Arrow shaft (make it longer)
+    shaft_start = (cx + arrow_width * 0.3, cy)
+    shaft_end = (cx - arrow_width * 0.3, cy)
+    shaft_width = int(button_size * 0.13)
+    pygame.draw.line(screen, icon_color, shaft_start, shaft_end, shaft_width)
+
+    # Arrow head (triangle) with a smaller tip
+    tip_offset = arrow_width * 0.08  # Smaller tip
+    head = [
+        (cx - arrow_width * 0.35, cy),  # tip (move further left for longer shaft)
+        (cx - arrow_width * 0.05 + tip_offset, cy - arrow_height * 0.7),
+        (cx - arrow_width * 0.05 + tip_offset, cy + arrow_height * 0.7)
+    ]
+    pygame.draw.polygon(screen, icon_color, head)

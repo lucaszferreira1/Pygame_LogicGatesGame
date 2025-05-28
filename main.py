@@ -1,6 +1,6 @@
 import pygame
 import sys
-from ui import Button, draw_background, draw_success_message, draw_run_button, draw_truth_table_button
+from ui import Button, draw_background, draw_success_message, draw_run_button, draw_truth_table_button, draw_quit_button
 from logic import Gate, Wire, Level
 import math
 import time
@@ -110,6 +110,9 @@ def play_level(screen, level):
 
     truth_table = False
 
+
+    quit_pos = (width * 0.025, height * 0.025)
+    quit_btn_rect = pygame.Rect(quit_pos[0], quit_pos[1], button_size, button_size)
     truth_pos = (width - width * 0.2, height * 0.025)
     truth_btn_rect = pygame.Rect(truth_pos[0], truth_pos[1], button_size, button_size)
     run_pos = (width - width * 0.1, height * 0.025)
@@ -127,8 +130,11 @@ def play_level(screen, level):
 
         level.draw(screen, width, height, mouse_pos)
 
+        quit_btn_hover = quit_btn_rect.collidepoint(mouse_pos)
+        draw_quit_button(screen, quit_pos, (100, 25, 25), button_size, quit_btn_hover)
+
         truth_btn_hover = truth_btn_rect.collidepoint(mouse_pos)
-        draw_truth_table_button(screen, truth_pos, green, button_size, truth_btn_hover)
+        draw_truth_table_button(screen, truth_pos, (170, 170, 170), button_size, truth_btn_hover)
         if truth_table:
             level.draw_truth_table(screen, width, height)
         
@@ -177,6 +183,8 @@ def play_level(screen, level):
                     elif truth_btn_hover:
                         truth_table = not truth_table
                         break
+                    elif quit_btn_hover:
+                        return
                     for gt, pos in level.palette:
                         if abs(mouse_pos[0] - pos[0]) < width * 0.05 and abs(mouse_pos[1] - pos[1]) < height * 0.05:
                             if level.allowed_gates[gt] == 0:
@@ -360,10 +368,14 @@ def history_menu():
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_DOWN:
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     selected = (selected + 1) % total_items
-                elif event.key == pygame.K_UP:
+                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     selected = (selected - 1) % total_items
+                elif event.key == pygame.K_DOWN:
+                    selected = (selected + columns) % total_items
+                elif event.key == pygame.K_UP:
+                    selected = (selected - columns) % total_items
                 elif event.key == pygame.K_RETURN:
                     if selected < len(levels):
                         return levels[selected]

@@ -354,26 +354,27 @@ class Level:
         for i in range(n_outputs):
             draw_text(screen, f"Out {i+1}", (start_x + (n_inputs + i) * cell_w + 10, start_y + 5), header_font)
 
-        # Draw rows
+        # Rows
         row_font = pygame.font.SysFont('arial', 14)
         for row in range(2 ** n_inputs):
             y = start_y + (row + 1) * cell_h
-            # Input bits
+            # Input
             bits = [(row >> (n_inputs - 1 - i)) & 1 for i in range(n_inputs)]
             for i, bit in enumerate(bits):
                 draw_text(screen, str(bit), (start_x + i * cell_w + 25, y + 7), row_font)
-            # Expected outputs
+            # Output
             expected = self.function([bool(b) for b in bits])
             for i, val in enumerate(expected):
                 draw_text(screen, str(int(val)), (start_x + (n_inputs + i) * cell_w + 25, y + 7), row_font)
 
-        # Draw grid
+        # Grid
         for i in range(n_inputs + n_outputs + 1):
             x = start_x + i * cell_w
             pygame.draw.line(screen, white, (x, start_y), (x, start_y + table_height), 1)
         for i in range(2 ** n_inputs + 2):
             y = start_y + i * cell_h
             pygame.draw.line(screen, white, (start_x, y), (start_x + table_width, y), 1)
+
 
     def draw(self, screen, width, height, mouse_pos):
         self.expected = self.function([term.value for term in self.inputs])
