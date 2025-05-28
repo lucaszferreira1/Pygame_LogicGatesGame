@@ -291,13 +291,15 @@ class Level:
     def draw_palette(self, screen, width, height):
         panel_height = int(height * 0.16)
         panel_y = height - panel_height
-        if not self.palette:
+
+        if not self.palette or len(self.palette) != len(self.allowed_gates):
             self.palette = [(gt, (width // 8 + i * width // 8, panel_y + panel_height // 2)) for i, gt in enumerate(self.allowed_gates.keys())]
 
         pygame.draw.rect(screen, (30, 30, 30), (0, panel_y - 5, width, panel_height + 5))
         pygame.draw.rect(screen, panel_bg, (0, panel_y, width, panel_height), border_radius=15)
         pygame.draw.rect(screen, white, (0, panel_y, width, panel_height), 2, border_radius=15)
 
+        font_cache = {}
         for gt, pos in self.palette:
             value = self.allowed_gates.get(gt, -1)
 
@@ -311,15 +313,17 @@ class Level:
             pygame.draw.rect(screen, border_color, rect, 2, border_radius=10)
 
             type_len = len(gt)
-            if type_len <= 3:
-                font = pygame.font.SysFont('arial', 20)
-            elif type_len <= 4:
-                font = pygame.font.SysFont('arial', 18)
-            elif type_len <= 8:
-                font = pygame.font.SysFont('arial', 14)
-            else:
-                font = pygame.font.SysFont('arial', 10)
-            draw_text(screen, gt, (pos[0] - font.size(gt)[0] // 2, pos[1] - font.size(gt)[1] // 2), font)
+            if type_len not in font_cache:
+                if type_len <= 3:
+                    font_cache[type_len] = gate_font
+                elif type_len <= 4:
+                    font_cache[type_len] = pygame.font.SysFont('arial', 18)
+                elif type_len <= 8:
+                    font_cache[type_len] = pygame.font.SysFont('arial', 14)
+                else:
+                    font_cache[type_len] = pygame.font.SysFont('arial', 10)
+            font = font_cache[type_len]
+            draw_text(screen, gt, (pos[0] - font.size(gt)[0] // 2, pos[1] - font.size(gt)[1] // 2), font,)
 
             if value > 0:
                 num_text = str(value)

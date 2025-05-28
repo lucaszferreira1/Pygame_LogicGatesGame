@@ -109,6 +109,9 @@ def play_level(screen, level):
 
     anim_start = time.time()
     while True:
+        # Display FPS in the window title
+        fps = clock.get_fps()
+        pygame.display.set_caption(f"Logic Gate Puzzle - FPS: {fps:.1f}")
         bg_offset = int((time.time() - anim_start) * 20) % height
         draw_background(screen, background_color, bg_offset)
 
@@ -262,7 +265,7 @@ def play_level(screen, level):
                         pygame.time.wait(2500)
                         return
         
-        clock.tick(240)
+        clock.tick(1000)
 
 
 def history_menu():
