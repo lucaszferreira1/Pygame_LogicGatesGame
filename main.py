@@ -119,9 +119,16 @@ def play_level(screen, level):
         if dragging:
             palette_rect = pygame.Rect(0, height - palette_height, width, palette_height)
             pygame.draw.rect(screen, background_color, palette_rect)
-            image = pygame.image.load("images/trash.png").convert_alpha()
-            image = pygame.transform.scale(image, (width // 8, width // 8))
-            screen.blit(image, (width // 2 - width // 16, height - palette_height))
+
+            if not hasattr(play_level, "_trash_icon") or play_level._trash_icon_size != width // 8:
+                trash_img = pygame.image.load("images/trash.png").convert_alpha()
+                trash_img = pygame.transform.scale(trash_img, (width // 8, width // 8))
+                play_level._trash_icon = trash_img
+                play_level._trash_icon_size = width // 8
+            else:
+                trash_img = play_level._trash_icon
+
+            screen.blit(trash_img, (width // 2 - width // 16, height - palette_height))
 
             dragging.position = (mouse_pos[0] + offset[0], mouse_pos[1] + offset[1])
             dragging.udpate_terminal_positions()
