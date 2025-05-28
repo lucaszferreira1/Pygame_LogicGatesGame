@@ -44,22 +44,20 @@ class Terminal:
         return f"Terminal(i={self.i}, type={self.type}, pos={self.pos}, value={self.value}, isNot={self.isNot})"
 
 class Gate:
-    def __init__(self, gate_type: str, inputs: List[bool], outputs: List[bool], position: Tuple[int,int], color: Tuple[int,int,int]=button_bg):
+    def __init__(self, gate_type: str, inputs: int, outputs: int, position: Tuple[int,int], function=None):
         self.id = None
         self.type = gate_type.upper()
-        self.inputs = [Terminal(i, "GATE_I", val) for i, val in enumerate(inputs)]
-        self.outputs = [Terminal(i, "GATE_O", val) for i, val in enumerate(outputs)]
+        self.inputs = [Terminal(i, "GATE_I", False) for i in range(inputs)]
+        self.outputs = [Terminal(i, "GATE_O", False) for i in range(outputs)]
         self.position = position
-        self.color = color
         self.radius = 30
+        self.function = function
 
         if self.type in ["NOT", "NAND", "NOR", "XNOR"]:
             self.outputs[0].isNot = True
     
     def copy(self):
-        input_values = [term.value for term in self.inputs]
-        output_values = [term.value for term in self.outputs]
-        return Gate(gate_type=self.type, inputs=input_values, outputs=output_values, position=self.position, color=self.color)
+        return Gate(gate_type=self.type, inputs=len(self.inputs), outputs=len(self.outputs), position=self.position, function=self.function)
 
     def draw(self, screen, x=-1, y=-1, selected=False):
         if x == -1 and y == -1:
@@ -73,21 +71,31 @@ class Gate:
         else:
             rect_width, rect_height = 80, 60
             rect = pygame.Rect(self.position[0] - rect_width // 2, self.position[1] - rect_height // 2, rect_width, rect_height)
-            pygame.draw.rect(screen, button_hover if selected else self.color, rect, border_radius=10)
+            pygame.draw.rect(screen, button_hover if selected else button_bg, rect, border_radius=10)
             pygame.draw.rect(screen, white, rect, 2, border_radius=10)
-            draw_text(screen, self.type, (self.position[0] - self.font.size(self.type)[0] // 2, self.position[1] - self.font.size(self.type)[1] // 2), self.font)
+
+            type_len = len(self.type)
+            if type_len <= 3:
+                font = pygame.font.SysFont('arial', 20)
+            elif type_len <= 4:
+                font = pygame.font.SysFont('arial', 18)
+            elif type_len <= 8:
+                font = pygame.font.SysFont('arial', 14)
+            else:
+                font = pygame.font.SysFont('arial', 10)
+            draw_text(screen, self.type, (self.position[0] - font.size(self.type)[0] // 2, self.position[1] - font.size(self.type)[1] // 2), font)
             
         # Draw input terminals
         input_positions = self.get_input_positions()
         for i, pos in input_positions:
-            color = green if self.inputs[i].value else self.color
+            color = green if self.inputs[i].value else button_bg
             pygame.draw.rect(screen, white, (pos[0] - 6, pos[1] - 6, 12, 12))
             pygame.draw.rect(screen, color, (pos[0] - 4, pos[1] - 4, 8, 8))
 
         # Draw output terminals
         output_positions = self.get_output_positions()
         for i, pos, circle_not in output_positions:
-            color = green if self.outputs[i].value else self.color
+            color = green if self.outputs[i].value else button_bg
             if circle_not:
                 pygame.draw.circle(screen, white, pos, 6)
                 pygame.draw.circle(screen, color, pos, 4)
@@ -161,7 +169,12 @@ class Gate:
             case "XNOR":
                 self.outputs[0].value = self.inputs[0].value == self.inputs[1].value if len(self.inputs) == 2 else False
             case _:
-                raise ValueError(f"Unsupported gate type: {self.type}")
+                if self.function:
+                    input_values = [term.value for term in self.inputs]
+                    for i, val in enumerate(self.function(input_values)):
+                        self.outputs[i].value = val
+                else:
+                    raise ValueError(f"Unsupported gate type: {self.type}")
     
     def __str__(self):
         return (f"Gate(type={self.type}, inputs={self.inputs}, outputs={self.outputs}, "
@@ -224,10 +237,10 @@ class Wire:
 
 
 class Level:
-    def __init__(self, name: str, inputs: List[bool], allowed_gates: dict[str, int], function=None):
+    def __init__(self, name: str, inputs: int, allowed_gates: dict[str, int], function=None):
         self.name = name
-        self.inputs = [Terminal(i, "TERMINAL_I", val) for i, val in enumerate(inputs)]
-        self.expected = function(inputs)
+        self.inputs = [Terminal(i, "TERMINAL_I", False) for i in range(inputs)]
+        self.expected = function([term.value for term in self.inputs])
         self.outputs = [Terminal(i, "TERMINAL_O") for i in range(len(self.expected))]
         self.allowed_gates = allowed_gates.copy()
         self.gates: dict[int, Gate] = {}
@@ -283,7 +296,16 @@ class Level:
             border_color = (255, 0, 0) if value == 0 else white
             pygame.draw.rect(screen, border_color, rect, 2, border_radius=10)
 
-            draw_text(screen, gt, (pos[0] - gate_font.size(gt)[0] // 2, pos[1] - gate_font.size(gt)[1] // 2), gate_font)
+            type_len = len(gt)
+            if type_len <= 3:
+                font = pygame.font.SysFont('arial', 20)
+            elif type_len <= 4:
+                font = pygame.font.SysFont('arial', 18)
+            elif type_len <= 8:
+                font = pygame.font.SysFont('arial', 14)
+            else:
+                font = pygame.font.SysFont('arial', 10)
+            draw_text(screen, gt, (pos[0] - font.size(gt)[0] // 2, pos[1] - font.size(gt)[1] // 2), font)
 
             if value > 0:
                 num_text = str(value)

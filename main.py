@@ -39,22 +39,56 @@ def level3_function(inputs):
     return [inputs[0] and inputs[1]]
 
 def level4_function(inputs):
-    return [inputs[0] ^ inputs[1]]
+    return [not(inputs[0] or inputs[1])]
 
+def level5_function(inputs):
+    return [not(inputs[0] and inputs[1])]
 
-levels = [  Level("NOT", [False], {'NOT': 1}, level1_function),
-            Level("OR", [True, False], {'OR': 1}, level2_function),
-            Level("AND", [True, False], {'AND': 1}, level3_function),
-            Level("XOR", [True, True], {'XOR': 1}, level4_function)]
+def level6_function(inputs):
+    return [True if inputs[0] != inputs[1] else False]
+
+def level7_function(inputs):
+    return [False if inputs[0] != inputs[1] else True]
+
+def level8_function(inputs):
+    # 1-bit half adder: inputs[0]=A, inputs[1]=B
+    sum_bit = inputs[0] ^ inputs[1]
+    carry_out = inputs[0] and inputs[1]
+    return [sum_bit, carry_out]
+
+def level9_function(inputs):
+    # 1-bit full adder: inputs[0]=A, inputs[1]=B, inputs[2]=Cin
+    sum_bit = (inputs[0] ^ inputs[1]) ^ inputs[2]
+    carry_out = (inputs[0] and inputs[1]) or (inputs[1] and inputs[2]) or (inputs[0] and inputs[2])
+    return [sum_bit, carry_out]
+
+def gate_half_adder(inputs):
+    # 1-bit half adder: inputs[0]=A, inputs[1]=B
+    sum_bit = inputs[0] ^ inputs[1]
+    carry_out = inputs[0] and inputs[1]
+    return [sum_bit, carry_out]
+
+levels = [  Level("NOT", 1, {'NOT': 1}, level1_function),
+            Level("OR", 2, {'OR': 1}, level2_function),
+            Level("AND", 2, {'AND': 1}, level3_function),
+            Level("NOR", 2, {'OR': 1, 'NOT': 1}, level4_function),
+            Level("NAND", 2, {'AND': 1, 'NOT': 1}, level5_function),
+            Level("OR - NAND", 2, {'NAND': 3}, level2_function),
+            Level("XOR", 2, {'OR': 1, 'AND': 2, 'NOT': 2}, level6_function),
+            Level("XNOR", 2, {'XOR': 1, 'NOT': 1}, level7_function),
+            Level("HALF ADDER", 2, {'XOR': 1, 'AND': 1}, level8_function),
+            Level("FULL ADDER", 3, {'XOR': 2, 'AND': 2, 'OR': 1}, level9_function),
+        ]
 
 logic_gates = {
-    'AND': Gate('AND', [False, False], [False], (0, 0)),
-    'OR': Gate('OR', [False, False], [False], (0, 0)),
-    'NOT': Gate('NOT', [False], [True], (0, 0)),
-    'XOR': Gate('XOR', [False, False], [False], (0, 0)),
-    'NAND': Gate('NAND', [False, False], [False], (0, 0)),
-    'NOR': Gate('NOR', [False, False], [False], (0, 0)),
-    "XNOR": Gate("XNOR", [False, False], [False], (0, 0)),
+    'AND': Gate('AND', 2, 1, (0, 0)),
+    'OR': Gate('OR', 2, 1, (0, 0)),
+    'NOT': Gate('NOT', 1, 1, (0, 0)),
+    'XOR': Gate('XOR', 2, 1, (0, 0)),
+    'NAND': Gate('NAND', 2, 1, (0, 0)),
+    'NOR': Gate('NOR', 2, 1, (0, 0)),
+    "XNOR": Gate("XNOR", 2, 1, (0, 0)),
+    'HALF ADDER': Gate('HALF ADDER', 2, 2, (0, 0), gate_half_adder),
 }
 
 def play_level(screen, level):
@@ -63,7 +97,7 @@ def play_level(screen, level):
     dragging = None
     wiring = None
     offset = (0, 0)
-    count_gates = 0
+    count_gates = len(level.gates)
 
     palette_height = int(height * 0.15)
     gate_radius = int(width * 0.01)
@@ -221,16 +255,15 @@ def history_menu():
     columns = 3
     x_spacing = WIDTH // (columns + 1)
     y_start = HEIGHT // 3
-    y_spacing = y_start // (len(levels) // columns + 1)
+    y_spacing = HEIGHT // 1.9 // (len(levels) // columns + 1)
 
     # Buttons
     level_buttons = []
-    unlocked_levels = 1  # Always unlock the first level
+    unlocked_levels = 20
 
-    # Check how many levels are completed
     for idx, lvl in enumerate(levels):
         if idx == 0:
-            continue  # First level always unlocked
+            continue
         if levels[idx - 1].completed:
             unlocked_levels = idx + 1
         else:
@@ -359,7 +392,7 @@ def options_menu():
 
 
 def main_menu():
-    options = ["Níveis", "Sem Fim", "Opções"]
+    options = ["Níveis", "Opções"]
     buttons = [Button(opt, title_font, WIDTH//2, HEIGHT // 3 + i*(HEIGHT * 0.2), 50, button_bg, hover_color) for i, opt in enumerate(options)]
     selected = 0
 
@@ -403,7 +436,7 @@ def main_menu():
                         level = history_menu()
                         if level:
                             play_level(screen, level)
-                    elif selected == 1:
+                    elif selected == -1:
                         print("Error: Endless mode not implemented yet.")
                     else:
                         options_menu()
@@ -412,7 +445,7 @@ def main_menu():
                     level = history_menu()
                     if level:
                         play_level(screen, level)
-                elif selected == 1:
+                elif selected == -1:
                     print("Error: Endless mode not implemented yet.")
                 else:
                     options_menu()
