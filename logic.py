@@ -24,6 +24,22 @@ default_gates = {"AND": ["images//AND.png", [[-20, -10], [-20, 10]], [20, 0, 0]]
                  "NAND": ["images//NAND.png", [[-20, -10], [-20, 10]], [20, 0, 1]],
                  "NOR": ["images//NOR.png", [[-20, -10], [-20, 10]], [20, 0, 1]]}
 
+_image_cache = {}
+
+def load_gate_image(gate_type: str):
+    if gate_type in _image_cache:
+        return _image_cache[gate_type]
+    
+    if gate_type in default_gates:
+        image_path = default_gates[gate_type][0]
+        image = pygame.image.load(image_path).convert_alpha()
+        image = pygame.transform.scale(image, (60, 60))
+        _image_cache[gate_type] = image
+        return image
+    
+    raise ValueError(f"Gate type '{gate_type}' not found.")
+
+
 class Terminal:
     def __init__(self, i: int, type_: str, value: bool=False, isNot: bool=False):
         self.i: int = i
@@ -62,15 +78,10 @@ class Gate:
     def draw(self, screen, x=-1, y=-1, selected=False):
         if x == -1 and y == -1:
             x, y = self.position
-        
-        # Draw Gate Sprite (optimized image loading)
+            
         if self.type in default_gates.keys():
-            # Cache loaded and scaled images to avoid reloading every frame
-            if not hasattr(self, '_cached_image'):
-                image = pygame.image.load(default_gates[self.type][0]).convert_alpha()
-                image = pygame.transform.smoothscale(image, (self.radius * 2, self.radius * 2))
-                self._cached_image = image
-            screen.blit(self._cached_image, (x - self.radius, y - self.radius))
+            image = load_gate_image(self.type)
+            screen.blit(image, (x - self.radius, y - self.radius))
         else:
             rect_width, rect_height = 80, 60
             rect = pygame.Rect(self.position[0] - rect_width // 2, self.position[1] - rect_height // 2, rect_width, rect_height)
