@@ -89,3 +89,66 @@ def draw_success_message(screen, width, height, font, color):
     pygame.draw.rect(screen, (60, 60, 60), backboard_rect, 4, border_radius=20)
     success_text = font.render("Nível Completo!", True, color)
     screen.blit(success_text, success_text.get_rect(center=(width // 2, height // 2)))
+
+def draw_run_button(screen, pos, color, button_size=56, hover=True):
+    rect = pygame.Rect(pos[0], pos[1], button_size, button_size)
+
+    # Change colors if hovered
+    bg_color = (40, 180, 90)
+    if hover:
+        border_color = (40, 120, 60)
+        triangle_color = (color[0], color[1], color[2], 200)
+    else:
+        border_color = (20, 90, 45)
+        triangle_color = color
+
+    pygame.draw.rect(screen, bg_color, rect, border_radius=14)
+    pygame.draw.rect(screen, border_color, rect, 4, border_radius=14)
+
+    triangle_width = button_size * 0.45
+    triangle_height = button_size * 0.38
+    cx, cy = rect.center
+
+    triangle = [
+        (cx - triangle_width * 0.5, cy - triangle_height),  # top left
+        (cx - triangle_width * 0.5, cy + triangle_height),  # bottom left
+        (cx + triangle_width * 0.6, cy)                    # right (tip)
+    ]
+
+    shadow_offset = 1
+    shadow_triangle = [(x + shadow_offset, y + shadow_offset) for (x, y) in triangle]
+    pygame.draw.polygon(screen, (0, 0, 0, 60), shadow_triangle)
+
+    pygame.draw.polygon(screen, triangle_color, triangle)
+
+def draw_truth_table_button(screen, pos, color, button_size=56, hover=True):
+    rect = pygame.Rect(pos[0], pos[1], button_size, button_size)
+
+    # Change colors if hovered
+    bg_color = (40, 180, 90)
+    if hover:
+        border_color = (40, 120, 60)
+        icon_color = (color[0], color[1], color[2], 200)
+    else:
+        border_color = (20, 90, 45)
+        icon_color = color
+
+    pygame.draw.rect(screen, bg_color, rect, border_radius=14)
+    pygame.draw.rect(screen, border_color, rect, 4, border_radius=14)
+
+    # Draw the truth table icon
+    cell_width = button_size // 4
+    cell_height = button_size // 4
+    grid_size = 3 * cell_width
+    # Calculate top-left corner to center the grid inside the button
+    grid_x = rect.x + (button_size - grid_size) // 2
+    grid_y = rect.y + (button_size - grid_size) // 2
+    for i in range(3):
+        for j in range(3):
+            cell_rect = pygame.Rect(
+                grid_x + i * cell_width + 2,
+                grid_y + j * cell_height + 2,
+                cell_width - 4,
+                cell_height - 4
+            )
+            pygame.draw.rect(screen, icon_color, cell_rect)

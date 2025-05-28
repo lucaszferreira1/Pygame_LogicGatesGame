@@ -1,6 +1,6 @@
 import pygame
 import sys
-from ui import Button, draw_background, draw_success_message
+from ui import Button, draw_background, draw_success_message, draw_run_button, draw_truth_table_button
 from logic import Gate, Wire, Level
 import math
 import time
@@ -106,10 +106,18 @@ def play_level(screen, level):
     palette_height = int(height * 0.15)
     gate_radius = int(width * 0.01)
     terminal_radius = int(width * 0.015)
+    button_size = 56
+
+    truth_table = False
+
+    truth_pos = (width - width * 0.2, height * 0.025)
+    truth_btn_rect = pygame.Rect(truth_pos[0], truth_pos[1], button_size, button_size)
+    run_pos = (width - width * 0.1, height * 0.025)
+    run_btn_rect = pygame.Rect(run_pos[0], run_pos[1], button_size, button_size)
+
 
     anim_start = time.time()
     while True:
-        # Display FPS in the window title
         fps = clock.get_fps()
         pygame.display.set_caption(f"Logic Gate Puzzle - FPS: {fps:.1f}")
         bg_offset = int((time.time() - anim_start) * 20) % height
@@ -118,7 +126,15 @@ def play_level(screen, level):
         mouse_pos = pygame.mouse.get_pos()
 
         level.draw(screen, width, height, mouse_pos)
+
+        truth_btn_hover = truth_btn_rect.collidepoint(mouse_pos)
+        draw_truth_table_button(screen, truth_pos, green, button_size, truth_btn_hover)
+        if truth_table:
+            level.draw_truth_table(screen, width, height)
         
+        run_btn_hover = run_btn_rect.collidepoint(mouse_pos)
+        draw_run_button(screen, run_pos, green, button_size, run_btn_hover)
+
         if dragging:
             palette_rect = pygame.Rect(0, height - palette_height, width, palette_height)
             pygame.draw.rect(screen, background_color, palette_rect)
@@ -148,7 +164,19 @@ def play_level(screen, level):
                 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
             elif e.type == pygame.MOUSEBUTTONDOWN:
                 if e.button == 1 and not dragging and not wiring:
-                    # Check palette
+                    if run_btn_hover:
+                        level.compile()
+                        if level.evaluate():
+                            level.completed = True
+                            draw_success_message(screen, width, height, get_scaled_font('arial', 0.08), green)
+                            pygame.display.flip()
+                            pygame.time.wait(2500)
+                            return
+                        else:
+                            break
+                    elif truth_btn_hover:
+                        truth_table = not truth_table
+                        break
                     for gt, pos in level.palette:
                         if abs(mouse_pos[0] - pos[0]) < width * 0.05 and abs(mouse_pos[1] - pos[1]) < height * 0.05:
                             if level.allowed_gates[gt] == 0:
@@ -161,17 +189,15 @@ def play_level(screen, level):
                             dragging = new_gate
                             offset = (new_gate.position[0] - mouse_pos[0], new_gate.position[1] - mouse_pos[1])
                             break
-                    else:
-                        for gate in level.gates.values():
-                            if (mouse_pos[0] - gate.position[0])**2 + (mouse_pos[1] - gate.position[1])**2 < gate.radius**2:
-                                dragging = gate
-                                offset = (gate.position[0] - mouse_pos[0], gate.position[1] - mouse_pos[1])
-                                break
-                        else:
-                            for term in level.inputs:
-                                if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < terminal_radius**2:
-                                    term.value = not term.value
-                                    break
+                    for gate in level.gates.values():
+                        if (mouse_pos[0] - gate.position[0])**2 + (mouse_pos[1] - gate.position[1])**2 < gate.radius**2:
+                            dragging = gate
+                            offset = (gate.position[0] - mouse_pos[0], gate.position[1] - mouse_pos[1])
+                            break
+                    for term in level.inputs:
+                        if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < terminal_radius**2:
+                            term.value = not term.value
+                            break
                 elif e.button == 3 and not dragging:
                     def check_terminal(term, kind, idx, attr):
                         if (mouse_pos[0] - term.pos[0])**2 + (mouse_pos[1] - term.pos[1])**2 < terminal_radius**2:
@@ -257,6 +283,8 @@ def play_level(screen, level):
                         dragging = None
                     else:
                         return
+                elif e.key == pygame.K_t:
+                    truth_table = not truth_table
                 elif e.key == pygame.K_LEFT:
                     level.cycle_inputs(False)
                 elif e.key == pygame.K_RIGHT:
@@ -270,7 +298,7 @@ def play_level(screen, level):
                         pygame.time.wait(2500)
                         return
 
-        clock.tick(1000)
+        clock.tick(240)
 
 
 def history_menu():
