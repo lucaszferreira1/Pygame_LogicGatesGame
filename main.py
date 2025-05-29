@@ -71,17 +71,17 @@ def gate_half_adder(inputs):
     carry_out = inputs[0] and inputs[1]
     return [sum_bit, carry_out]
 
-levels = [  Level("INTRO", 1, {}, level0_function),
-            Level("NOT", 1, {'NOT': 1}, level1_function),
-            Level("OR", 2, {'OR': 1}, level2_function),
-            Level("AND", 2, {'AND': 1}, level3_function),
-            Level("NOR", 2, {'OR': 1, 'NOT': 1}, level4_function),
-            Level("NAND", 2, {'AND': 1, 'NOT': 1}, level5_function),
-            Level("OR - NAND", 2, {'NAND': 3}, level2_function),
-            Level("XOR", 2, {'OR': 1, 'AND': 2, 'NOT': 2}, level6_function),
-            Level("XNOR", 2, {'XOR': 1, 'NOT': 1}, level7_function),
-            Level("HALF ADDER", 2, {'XOR': 1, 'AND': 1}, level8_function),
-            Level("FULL ADDER", 3, {'XOR': 2, 'AND': 2, 'OR': 1}, level9_function),
+levels = [  Level("INTRO", 1, {}, level0_function, "Bem vindo ao jogo de Lógica Digital! Neste jogo, você irá aprender sobre portas lógicas e como elas funcionam. Para começar clique o botão direito do mouse no terminal de entrada e depois no de saída. Para finalizar o nível aperte Enter ou clique no botão de executar."),
+            Level("NOT", 1, {'NOT': 1}, level1_function, "Agora vamos aprender sobre a porta NOT. Ela inverte o valor de entrada. Clique e arraste a porta NOT para o circuito, conecte-a ao terminal de entrada e depois ao terminal de saída. Para finalizar o nível aperte Enter ou clique no botão de executar."),
+            Level("OR", 2, {'OR': 1}, level2_function, "A porta OR retorna verdadeiro se pelo menos uma entrada for verdadeira. Caso você queira saber a tabela verdade de uma porta lógica, aperte a tecla T ou clique no botão de tabela verdade."),
+            Level("AND", 2, {'AND': 1}, level3_function, "A porta AND retorna verdadeiro se todas as entradas forem verdadeiras."),
+            Level("NOR", 2, {'OR': 1, 'NOT': 1}, level4_function, "A porta NOR é a combinação da porta OR com a NOT. Ela retorna verdadeiro apenas se todas as entradas forem falsas."),
+            Level("NAND", 2, {'AND': 1, 'NOT': 1}, level5_function, "A porta NAND é a combinação da porta AND com a NOT. Ela retorna verdadeiro se pelo menos uma entrada for falsa. Você pode usar a porta NAND para criar todas as outras portas lógicas."),
+            Level("OR - NAND", 2, {'NAND': 3}, level2_function, "Neste nível, você deve usar apenas portas NAND para criar uma porta OR."),
+            Level("XOR", 2, {'OR': 1, 'AND': 2, 'NOT': 2}, level6_function, "Agora vamos aprender sobre a porta XOR. Ela retorna verdadeiro se apenas uma das entradas for verdadeira."),
+            Level("XNOR", 2, {'XOR': 1, 'NOT': 1}, level7_function, "A porta XNOR é a combinação da porta XOR com a NOT. Ela retorna verdadeiro se as entradas forem iguais."),
+            Level("HALF ADDER", 2, {'XOR': 1, 'AND': 1}, level8_function, "Neste nível, você deve usar uma porta XOR e uma porta AND para criar um somador de meio bit (half adder). O somador de meio bit recebe duas entradas e retorna a soma e o carry."),
+            Level("FULL ADDER", 3, {'XOR': 2, 'AND': 2, 'OR': 1}, level9_function, "Neste nível, você deve usar duas portas XOR, duas portas AND e uma porta OR para criar um somador completo (full adder). O somador completo recebe três entradas: A, B e Cin (carry in) e retorna a soma e o carry out."),
         ]
 
 logic_gates = {
@@ -170,12 +170,6 @@ def play_level(screen, level):
                 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
             elif e.type == pygame.MOUSEBUTTONDOWN:
                 if e.button == 1 :
-                    # Play click sound
-                    try:
-                        click_sound = pygame.mixer.Sound("sounds/click.wav")
-                        click_sound.play()
-                    except Exception:
-                        pass
                     if not dragging and not wiring:
                         if run_btn_hover:
                             level.compile()
@@ -404,8 +398,13 @@ def history_menu():
                 if event.key == pygame.K_ESCAPE:
                     return None
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if selected < unlocked_levels:
-                    return levels[selected]
+                try:
+                    click_sound = pygame.mixer.Sound("sounds/click.wav")
+                    click_sound.play()
+                except Exception:
+                    pass
+                if selected < len(levels):
+                    play_level(screen, levels[selected])
                 else:
                     return None
 
@@ -483,7 +482,6 @@ def main_menu():
     anim_start = time.time()
 
     while True:
-        # Animate background offset slowly going up
         bg_offset = int((time.time() - anim_start) * 20) % HEIGHT
         draw_background(screen, background_color, bg_offset)
 
@@ -516,14 +514,17 @@ def main_menu():
                     selected = (selected - 1) % len(buttons)
                 elif event.key == pygame.K_RETURN:
                     if selected == 0:
-                        level = history_menu()
-                        if level:
-                            play_level(screen, level)
+                        history_menu()
                     elif selected == -1:
                         print("Error: Endless mode not implemented yet.")
                     else:
                         options_menu()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                try:
+                    click_sound = pygame.mixer.Sound("sounds/click.wav")
+                    click_sound.play()
+                except Exception:
+                    pass
                 if selected == 0:
                     level = history_menu()
                     if level:

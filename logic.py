@@ -251,7 +251,7 @@ class Wire:
 
 
 class Level:
-    def __init__(self, name: str, inputs: int, allowed_gates: dict[str, int], function=None):
+    def __init__(self, name: str, inputs: int, allowed_gates: dict[str, int], function=None, instructions: str = ""):
         self.name = name
         self.inputs = [Terminal(i, "TERMINAL_I", False) for i in range(inputs)]
         self.expected = function([term.value for term in self.inputs])
@@ -264,6 +264,7 @@ class Level:
         self.palette = []
         self.current_function = None
         self.completed = False
+        self.instructions = instructions
 
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
@@ -344,6 +345,10 @@ class Level:
         start_x = center_x - table_width // 2
         start_y = center_y - table_height // 2
 
+        # Draw gray background
+        bg_rect = pygame.Rect(start_x, start_y, table_width, table_height)
+        pygame.draw.rect(screen, (60, 60, 60), bg_rect, border_radius=10)
+
         # Draw header
         header_font = pygame.font.SysFont('arial', 16)
         cell_w = 60
@@ -375,11 +380,53 @@ class Level:
             y = start_y + i * cell_h
             pygame.draw.line(screen, white, (start_x, y), (start_x + table_width, y), 1)
 
+    def draw_instructions(self, screen, width, height):
+        if not self.instructions:
+            return
+
+        font = pygame.font.SysFont("Arial", 20)
+        max_width = int(width * 0.8)
+        words = self.instructions.split()
+        lines = []
+        current_line = ""
+        for word in words:
+            test_line = current_line + (" " if current_line else "") + word
+            if font.size(test_line)[0] <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+
+        line_height = font.get_linesize()
+        total_height = line_height * len(lines)
+        text_surfaces = [font.render(line, True, (255, 255, 255)) for line in lines]
+        text_width = max(surf.get_width() for surf in text_surfaces)
+        text_height = total_height
+
+        center_x = width // 2
+        center_y = int(height * 0.75)
+        text_rect = pygame.Rect(0, 0, text_width, text_height)
+        text_rect.center = (center_x, center_y)
+
+        bg_surface = pygame.Surface(text_rect.size, pygame.SRCALPHA)
+        bg_surface.fill((0, 0, 0, 160))
+        screen.blit(bg_surface, text_rect.topleft)
+
+        border_rect = text_rect.inflate(8, 8)
+        pygame.draw.rect(screen, (255, 255, 255), border_rect, 2, border_radius=8)
+
+        for i, surf in enumerate(text_surfaces):
+            line_pos = (text_rect.left, text_rect.top + i * line_height)
+            screen.blit(surf, line_pos)
 
     def draw(self, screen, width, height, mouse_pos):
         self.expected = self.function([term.value for term in self.inputs])
 
         self.draw_palette(screen, width, height)
+
+        self.draw_instructions(screen, width, height)
 
         for term in self.inputs:
             color = green if term.value else button_bg
