@@ -562,7 +562,7 @@ class Level:
 
         body = f"return [{', '.join(output_exprs)}]"
         func_str = f"def logic_func(x):\n    {body}"
-
+        print(func_str)
         local_ns = {}
         exec(func_str, {}, local_ns)
         self.current_function = local_ns["logic_func"]
