@@ -82,6 +82,7 @@ levels = [  Level("INTRO", 1, {}, level0_function, "Bem vindo ao jogo de Lógica
             Level("XNOR", 2, {'XOR': 1, 'NOT': 1}, level7_function, "A porta XNOR é a combinação da porta XOR com a NOT. Ela retorna verdadeiro se as entradas forem iguais."),
             Level("HALF ADDER", 2, {'XOR': 1, 'AND': 1}, level8_function, "Neste nível, você deve usar uma porta XOR e uma porta AND para criar um somador de meio bit (half adder). O somador de meio bit recebe duas entradas e retorna a soma e o carry."),
             Level("FULL ADDER", 3, {'XOR': 2, 'AND': 2, 'OR': 1}, level9_function, "Neste nível, você deve usar duas portas XOR, duas portas AND e uma porta OR para criar um somador completo (full adder). O somador completo recebe três entradas: A, B e Cin (carry in) e retorna a soma e o carry out."),
+            Level("FULL ADDER 2", 3, {'OR': 1, 'HALF ADDER': 2}, level9_function, "Neste nível, você deve usar duas portas HALF ADDER e uma porta OR para criar um somador completo (full adder)."),
         ]
 
 logic_gates = {
@@ -330,6 +331,9 @@ def history_menu():
     y_start = HEIGHT // 3
     y_spacing = HEIGHT // 1.9 // (len(levels) // columns + 1)
 
+    # Smaller button height
+    button_height = 32
+
     # Buttons
     level_buttons = []
     unlocked_levels = 50 # Trocar o valor para 1 na entrega
@@ -347,9 +351,9 @@ def history_menu():
         row = idx // columns
         x = x_spacing * (col + 1)
         y = y_start + row * y_spacing
-        level_buttons.append(Button(lvl.name, menu_font, x, y, 50, button_bg, hover_color))
+        level_buttons.append(Button(lvl.name, menu_font, x, y, button_height, button_bg, hover_color))
 
-    voltar_button = Button("Voltar", menu_font, WIDTH // 2, HEIGHT - (HEIGHT * 0.1), 50, button_bg, hover_color)
+    voltar_button = Button("Voltar", menu_font, WIDTH // 2, HEIGHT - (HEIGHT * 0.1), button_height, button_bg, hover_color)
     selected = 0
     total_items = len(level_buttons) + 1
     anim_start = time.time()

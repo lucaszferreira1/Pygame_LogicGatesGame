@@ -469,17 +469,14 @@ class Level:
         n = len(self.inputs)
         if n == 0:
             return
-        # Convert current input values to an integer
         current = 0
         for i, term in enumerate(self.inputs):
             if term.value:
                 current |= (1 << (n - i - 1))
-        # Cycle to next or previous value
         if forward:
             next_val = (current + 1) % (2 ** n)
         else:
             next_val = (current - 1) % (2 ** n)
-        # Set input values according to next_val bits
         for i in range(n):
             self.inputs[i].value = bool((next_val >> (n - i - 1)) & 1)
     
@@ -498,14 +495,15 @@ class Level:
     def compile(self):
         var_map = {}
         expr_map = {}
+        custom_gate_funcs = {}
 
-        for i, term in enumerate(self.inputs):
+        for i in range(len(self.inputs)):
             var_map[("TERMINAL_I", i)] = f"x[{i}]"
 
-        for gid, gate in self.gates.items():
+        for gid in self.gates:
             var_map[("GATE_O", gid, 0)] = f"g{gid}"
 
-        for i, term in enumerate(self.outputs):
+        for i in range(len(self.outputs)):
             var_map[("TERMINAL_O", i)] = f"y{i}"
 
         input_sources = {}
@@ -515,17 +513,17 @@ class Level:
             elif wire.to_i[1] == "TERMINAL_O":
                 input_sources[("OUT", wire.to_i[0])] = wire.from_i
 
-        def build_expr_for_gate(gid):
+        def build_expr_for_gate(gid, output_idx=0):
             gate = self.gates[gid]
             input_exprs = []
-            for i, _ in enumerate(gate.inputs):
+            for i in range(len(gate.inputs)):
                 src = input_sources.get((gid, i))
                 if src is None:
                     input_exprs.append("False")
                 elif src[1] == "TERMINAL_I":
                     input_exprs.append(var_map[(src[1], src[0])])
                 elif src[1] == "GATE_O":
-                    input_exprs.append(build_expr_for_gate(src[0]))
+                    input_exprs.append(build_expr_for_gate(src[0], src[2] if len(self.gates[src[0]].outputs) > 1 else 0))
                 else:
                     input_exprs.append("False")
             t = gate.type
@@ -544,25 +542,34 @@ class Level:
             elif t == "XNOR":
                 expr = f"({input_exprs[0]} == {input_exprs[1]})"
             else:
-                expr = "False"
-            expr_map[gid] = expr
+                func_name = f"custom_func_{gid}"
+                custom_gate_funcs[func_name] = gate.function
+                inputs_str = ", ".join(input_exprs)
+                expr = f"{func_name}([{inputs_str}])[{output_idx}]"
+            expr_map[(gid, output_idx)] = expr
             return expr
 
         output_exprs = []
-        for i, _ in enumerate(self.outputs):
+        for i in range(len(self.outputs)):
             src = input_sources.get(("OUT", i))
             if src is None:
                 output_exprs.append("False")
             elif src[1] == "TERMINAL_I":
                 output_exprs.append(var_map[(src[1], src[0])])
             elif src[1] == "GATE_O":
-                output_exprs.append(build_expr_for_gate(src[0]))
+                output_exprs.append(build_expr_for_gate(src[0], src[2] if len(self.gates[src[0]].outputs) > 1 else 0))
             else:
                 output_exprs.append("False")
 
         body = f"return [{', '.join(output_exprs)}]"
-        func_str = f"def logic_func(x):\n    {body}"
-        print(func_str)
+        func_lines = ["def logic_func(x):"]
+        for func_name in custom_gate_funcs:
+            func_lines.append(f"    {func_name} = __custom_funcs__['{func_name}']")
+        func_lines.append(f"    {body}")
+
+        func_str = "\n".join(func_lines)
+
         local_ns = {}
-        exec(func_str, {}, local_ns)
+        global_ns = {"__custom_funcs__": custom_gate_funcs}
+        exec(func_str, global_ns, local_ns)
         self.current_function = local_ns["logic_func"]
