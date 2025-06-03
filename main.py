@@ -397,10 +397,9 @@ def history_menu():
                 elif event.key == pygame.K_UP:
                     selected = (selected - columns) % total_items
                 elif event.key == pygame.K_RETURN:
-                    if selected < len(levels):
-                        return levels[selected]
-                    else:
-                        return None
+                    if selected < unlocked_levels:
+                        play_level(screen, levels[selected])
+                    return None
                 if event.key == pygame.K_ESCAPE:
                     return None
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -409,8 +408,9 @@ def history_menu():
                     click_sound.play()
                 except Exception:
                     pass
-                if selected < len(levels):
+                if selected < unlocked_levels:
                     play_level(screen, levels[selected])
+                return None
                 
 
         clock.tick(60)
