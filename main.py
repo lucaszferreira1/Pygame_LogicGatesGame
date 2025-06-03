@@ -1,6 +1,6 @@
 import pygame
 import sys
-from ui import Button, draw_background, draw_success_message, draw_run_button, draw_truth_table_button, draw_quit_button
+from ui import Button, draw_background, draw_success_message, draw_run_button, draw_truth_table_button, draw_quit_button, draw_reset_button
 from logic import Gate, Wire, Level
 import math
 import time
@@ -114,6 +114,8 @@ def play_level(screen, level):
 
     quit_pos = (width * 0.025, height * 0.025)
     quit_btn_rect = pygame.Rect(quit_pos[0], quit_pos[1], button_size, button_size)
+    reset_pos = (width - width * 0.3, height * 0.025)
+    reset_btn_rect = pygame.Rect(reset_pos[0], reset_pos[1], button_size, button_size)
     truth_pos = (width - width * 0.2, height * 0.025)
     truth_btn_rect = pygame.Rect(truth_pos[0], truth_pos[1], button_size, button_size)
     run_pos = (width - width * 0.1, height * 0.025)
@@ -134,6 +136,9 @@ def play_level(screen, level):
         quit_btn_hover = quit_btn_rect.collidepoint(mouse_pos)
         draw_quit_button(screen, quit_pos, (100, 25, 25), button_size, quit_btn_hover)
 
+        reset_btn_hover = reset_btn_rect.collidepoint(mouse_pos)
+        draw_reset_button(screen, reset_pos, (170, 170, 170), button_size, reset_btn_hover)
+
         truth_btn_hover = truth_btn_rect.collidepoint(mouse_pos)
         draw_truth_table_button(screen, truth_pos, (170, 170, 170), button_size, truth_btn_hover)
         if truth_table:
@@ -141,6 +146,7 @@ def play_level(screen, level):
         
         run_btn_hover = run_btn_rect.collidepoint(mouse_pos)
         draw_run_button(screen, run_pos, green, button_size, run_btn_hover)
+
 
         if dragging:
             palette_rect = pygame.Rect(0, height - palette_height, width, palette_height)
@@ -190,6 +196,12 @@ def play_level(screen, level):
                             dragging = None
                             truth_table = False
                             return
+                        elif reset_btn_hover:
+                            level.reset()
+                            wiring = None
+                            dragging = None
+                            truth_table = False
+                            break
                         for gt, pos in level.palette:
                             if abs(mouse_pos[0] - pos[0]) < width * 0.05 and abs(mouse_pos[1] - pos[1]) < height * 0.05:
                                 if level.allowed_gates[gt] == 0:

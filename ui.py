@@ -187,3 +187,30 @@ def draw_quit_button(screen, pos, color, button_size=56, hover=True):
         (cx - arrow_width * 0.05 + tip_offset, cy + arrow_height * 0.7)
     ]
     pygame.draw.polygon(screen, icon_color, head)
+
+def draw_reset_button(screen, pos, color, button_size=56, hover=True):
+    rect = pygame.Rect(pos[0], pos[1], button_size, button_size)
+
+    # Change colors if hovered
+    bg_color = (200, 200, 40)
+    if hover:
+        border_color = (160, 160, 30)
+        icon_color = (color[0], color[1], color[2], 220)
+    else:
+        border_color = (120, 120, 20)
+        icon_color = color
+
+    pygame.draw.rect(screen, bg_color, rect, border_radius=14)
+    pygame.draw.rect(screen, border_color, rect, 4, border_radius=14)
+
+    # Load and draw the reset icon (images/reset.png), scale to fit
+    reset_img = pygame.image.load("images//reset.png").convert_alpha()
+    icon_size = int(button_size * 0.6)
+    reset_img = pygame.transform.scale(reset_img, (icon_size, icon_size))
+    # Tint the icon
+    tint_surf = pygame.Surface((icon_size, icon_size), pygame.SRCALPHA)
+    tint_surf.fill(icon_color)
+    reset_img.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+    icon_x = rect.x + (button_size - icon_size) // 2
+    icon_y = rect.y + (button_size - icon_size) // 2
+    screen.blit(reset_img, (icon_x, icon_y))

@@ -267,7 +267,10 @@ class Level:
         self.instructions = instructions
 
     def reset(self):
-        self.gates.clear()
+        temp_gates = list(self.gates.values())
+        for gate in temp_gates:
+            self.remove_gate(gate)
+            self.allowed_gates[gate.type] += 1
         self.wires.clear()
         for term in self.outputs:
             term.value = False
