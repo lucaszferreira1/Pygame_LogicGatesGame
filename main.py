@@ -54,22 +54,24 @@ def level7_function(inputs):
     return [False if inputs[0] != inputs[1] else True]
 
 def level8_function(inputs):
-    # 1-bit half adder: inputs[0]=A, inputs[1]=B
     sum_bit = inputs[0] ^ inputs[1]
     carry_out = inputs[0] and inputs[1]
     return [sum_bit, carry_out]
 
 def level9_function(inputs):
-    # 1-bit full adder: inputs[0]=A, inputs[1]=B, inputs[2]=Cin
     sum_bit = (inputs[0] ^ inputs[1]) ^ inputs[2]
     carry_out = (inputs[0] and inputs[1]) or (inputs[1] and inputs[2]) or (inputs[0] and inputs[2])
     return [sum_bit, carry_out]
 
 def gate_half_adder(inputs):
-    # 1-bit half adder: inputs[0]=A, inputs[1]=B
     sum_bit = inputs[0] ^ inputs[1]
     carry_out = inputs[0] and inputs[1]
     return [sum_bit, carry_out]
+
+def level10_function(inputs):
+    diff = inputs[0] ^ inputs[1]
+    borrow = (not inputs[0]) and inputs[1]
+    return [diff, borrow]
 
 levels = [  Level("INTRO", 1, {}, level0_function, "Bem vindo ao jogo de Lógica Digital! Neste jogo, você irá aprender sobre portas lógicas e como elas funcionam. Para começar clique o botão direito do mouse no terminal de entrada e depois no de saída. Para finalizar o nível aperte Enter ou clique no botão de executar."),
             Level("NOT", 1, {'NOT': 1}, level1_function, "Agora vamos aprender sobre a porta NOT. Ela inverte o valor de entrada. Clique e arraste a porta NOT para o circuito, conecte-a ao terminal de entrada e depois ao terminal de saída. Para finalizar o nível aperte Enter ou clique no botão de executar."),
@@ -83,6 +85,7 @@ levels = [  Level("INTRO", 1, {}, level0_function, "Bem vindo ao jogo de Lógica
             Level("HALF ADDER", 2, {'XOR': 1, 'AND': 1}, level8_function, "Neste nível, você deve usar uma porta XOR e uma porta AND para criar um somador de meio bit (half adder). O somador de meio bit recebe duas entradas e retorna a soma e o carry."),
             Level("FULL ADDER", 3, {'XOR': 2, 'AND': 2, 'OR': 1}, level9_function, "Neste nível, você deve usar duas portas XOR, duas portas AND e uma porta OR para criar um somador completo (full adder). O somador completo recebe três entradas: A, B e Cin (carry in) e retorna a soma e o carry out."),
             Level("FULL ADDER 2", 3, {'OR': 1, 'HALF ADDER': 2}, level9_function, "Neste nível, você deve usar duas portas HALF ADDER e uma porta OR para criar um somador completo (full adder)."),
+            Level("SUBTRACTION", 2, {'XOR': 1, 'AND': 1, 'NOT': 1}, level10_function, "Neste nível, você deve usar uma porta XOR, uma porta AND e uma porta NOT para criar um subtrator de meio bit (half subtractor). O subtrator de meio bit recebe duas entradas e retorna a diferença e o borrow."),
         ]
 
 logic_gates = {
@@ -102,7 +105,6 @@ def play_level(screen, level):
     dragging = None
     wiring = None
     offset = (0, 0)
-    count_gates = len(level.gates)
 
     palette_height = int(height * 0.15)
     gate_radius = int(width * 0.01)
@@ -110,7 +112,6 @@ def play_level(screen, level):
     button_size = 56
 
     truth_table = False
-
 
     quit_pos = (width * 0.025, height * 0.025)
     quit_btn_rect = pygame.Rect(quit_pos[0], quit_pos[1], button_size, button_size)
@@ -208,9 +209,8 @@ def play_level(screen, level):
                                     continue
                                 new_gate = logic_gates[gt].copy()
                                 new_gate.position = mouse_pos
-                                level.add_gate(new_gate, count_gates)
+                                level.add_gate(new_gate)
                                 level.allowed_gates[gt] -= 1
-                                count_gates += 1
                                 dragging = new_gate
                                 offset = (new_gate.position[0] - mouse_pos[0], new_gate.position[1] - mouse_pos[1])
                                 break

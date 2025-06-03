@@ -277,9 +277,10 @@ class Level:
         self.current_wire = None
         self.current_function = None
 
-    def add_gate(self, gate, id_gate):
-        gate.id = id_gate
-        self.gates[id_gate] = gate
+    def add_gate(self, gate):
+        id = max(self.gates.keys()) + 1 if len(self.gates) > 0 else 0
+        gate.id = id
+        self.gates[id] = gate
 
     def remove_gate(self, gate):
         idx_gate = gate.id
