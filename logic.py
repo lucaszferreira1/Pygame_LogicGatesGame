@@ -266,6 +266,15 @@ class Level:
         self.completed = False
         self.instructions = instructions
 
+    def reset(self):
+        self.gates.clear()
+        self.wires.clear()
+        for term in self.outputs:
+            term.value = False
+        self.current_wire = None
+        self.current_function = None
+        self.completed = False
+
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
         self.gates[id_gate] = gate

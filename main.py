@@ -303,6 +303,8 @@ def play_level(screen, level):
                     level.cycle_inputs(False)
                 elif e.key == pygame.K_RIGHT or e.key == pygame.K_d:
                     level.cycle_inputs(True)
+                elif e.key == pygame.K_r:
+                    level.reset()
                 elif e.key == pygame.K_RETURN or e.key == pygame.K_SPACE:
                     wiring = None
                     dragging = None
@@ -336,7 +338,7 @@ def history_menu():
 
     # Buttons
     level_buttons = []
-    unlocked_levels = 50 # Trocar o valor para 1 na entrega
+    unlocked_levels = 1 # Trocar o valor para 1 na entrega
 
     for idx, lvl in enumerate(levels):
         if idx == 0:
@@ -409,8 +411,7 @@ def history_menu():
                     pass
                 if selected < len(levels):
                     play_level(screen, levels[selected])
-                else:
-                    return None
+                
 
         clock.tick(60)
 
