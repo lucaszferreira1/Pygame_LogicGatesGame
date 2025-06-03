@@ -276,7 +276,6 @@ class Level:
             term.value = False
         self.current_wire = None
         self.current_function = None
-        self.completed = False
 
     def add_gate(self, gate, id_gate):
         gate.id = id_gate
