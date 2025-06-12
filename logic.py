@@ -1,4 +1,4 @@
-import pygame
+import pygame, sys, os
 from typing import List, Tuple
 from ui import draw_text
 
@@ -16,13 +16,20 @@ gate_font = pygame.font.SysFont('arial', 20)
 quantity_font = pygame.font.SysFont('arial', 14)
 expected_font = pygame.font.SysFont('arial', 10)
 
-default_gates = {"AND": ["images//AND.png", [[-20, -10], [-20, 10]], [20, 0, 0]],
-                 "OR": ["images//OR.png", [[-20, -10], [-20, 10]], [20, 0, 0]],
-                 "NOT": ["images//NOT.png", [[-20, 0]], [17, 0, 1]],
-                 "XOR": ["images//XOR.png", [[-20, -10], [-20, 10]], [20, 0, 0]],
-                 "XNOR": ["images//XNOR.png", [[-20, -10], [-20, 10]], [20, 0, 1]],
-                 "NAND": ["images//NAND.png", [[-20, -10], [-20, 10]], [20, 0, 1]],
-                 "NOR": ["images//NOR.png", [[-20, -10], [-20, 10]], [20, 0, 1]]}
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS  # PyInstaller creates this temp folder
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+default_gates = {"AND": [resource_path("images//AND.png"), [[-20, -10], [-20, 10]], [20, 0, 0]],
+                 "OR": [resource_path("images//OR.png"), [[-20, -10], [-20, 10]], [20, 0, 0]],
+                 "NOT": [resource_path("images//NOT.png"), [[-20, 0]], [17, 0, 1]],
+                 "XOR": [resource_path("images//XOR.png"), [[-20, -10], [-20, 10]], [20, 0, 0]],
+                 "XNOR": [resource_path("images//XNOR.png"), [[-20, -10], [-20, 10]], [20, 0, 1]],
+                 "NAND": [resource_path("images//NAND.png"), [[-20, -10], [-20, 10]], [20, 0, 1]],
+                 "NOR": [resource_path("images//NOR.png"), [[-20, -10], [-20, 10]], [20, 0, 1]]}
 
 _image_cache = {}
 
@@ -251,10 +258,13 @@ class Wire:
 
 
 class Level:
-    def __init__(self, name: str, inputs: int, allowed_gates: dict[str, int], function=None, instructions: str = ""):
+    def __init__(self, name: str, inputs: int, allowed_gates: dict[str, int], function=None, instructions: str = "", isSim: bool = False):
         self.name = name
         self.inputs = [Terminal(i, "TERMINAL_I", False) for i in range(inputs)]
-        self.expected = function([term.value for term in self.inputs])
+        if isSim:
+            self.expected = [False] * len(self.inputs)
+        else:
+            self.expected = function([term.value for term in self.inputs])
         self.outputs = [Terminal(i, "TERMINAL_O") for i in range(len(self.expected))]
         self.allowed_gates = allowed_gates.copy()
         self.gates: dict[int, Gate] = {}
@@ -265,6 +275,7 @@ class Level:
         self.current_function = None
         self.completed = False
         self.instructions = instructions
+        self.isSimulator = isSim
 
     def reset(self):
         temp_gates = list(self.gates.values())
@@ -434,7 +445,10 @@ class Level:
             screen.blit(surf, line_pos)
 
     def draw(self, screen, width, height, mouse_pos):
-        self.expected = self.function([term.value for term in self.inputs])
+        if self.isSimulator:
+            self.expected = [False] * len(self.inputs)
+        else:
+            self.expected = self.function([term.value for term in self.inputs])
 
         self.draw_palette(screen, width, height)
 
@@ -450,7 +464,8 @@ class Level:
             pygame.draw.circle(screen, white, term.pos, 12)
             pygame.draw.circle(screen, color, term.pos, 10)
             draw_text(screen, f"{term.value}", (term.pos[0] + 20, term.pos[1] - 13), gate_font)
-            draw_text(screen, f"Expected: {self.expected[term.i]}", (term.pos[0] + 20, term.pos[1] + 5), expected_font)
+            if not self.isSimulator:
+                draw_text(screen, f"Esperado: {self.expected[term.i]}", (term.pos[0] + 20, term.pos[1] + 5), expected_font)
         for gate in self.gates.values():
             gate.update()
             gate.draw(screen)
@@ -584,4 +599,5 @@ class Level:
         local_ns = {}
         global_ns = {"__custom_funcs__": custom_gate_funcs}
         exec(func_str, global_ns, local_ns)
+        print(func_str)
         self.current_function = local_ns["logic_func"]

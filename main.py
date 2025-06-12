@@ -1,9 +1,13 @@
 import pygame
 import sys
 from ui import Button, draw_background, draw_success_message, draw_run_button, draw_truth_table_button, draw_quit_button, draw_reset_button
-from logic import Gate, Wire, Level
+from logic import Gate, Wire, Level, resource_path
 import math
 import time
+
+# Criar o .exe
+# pyinstaller --onefile --noconsole --add-data "images;images" main.py
+
 
 # Pygame setup
 pygame.init()
@@ -73,6 +77,12 @@ def level10_function(inputs):
     borrow = (not inputs[0]) and inputs[1]
     return [diff, borrow]
 
+def level11_function(inputs):
+    diff = (inputs[0] ^ inputs[1]) ^ inputs[2]
+    borrow = ((not inputs[0]) and inputs[1]) or ((not inputs[0]) and inputs[2]) or (inputs[1] and inputs[2])
+    return [diff, borrow]
+
+
 levels = [  Level("INTRO", 1, {}, level0_function, "Bem vindo ao jogo de Lógica Digital! Neste jogo, você irá aprender sobre portas lógicas e como elas funcionam. Para começar clique o botão direito do mouse no terminal de entrada e depois no de saída. Para finalizar o nível aperte Enter ou clique no botão de executar."),
             Level("NOT", 1, {'NOT': 1}, level1_function, "Agora vamos aprender sobre a porta NOT. Ela inverte o valor de entrada. Clique e arraste a porta NOT para o circuito, conecte-a ao terminal de entrada e depois ao terminal de saída. Para finalizar o nível aperte Enter ou clique no botão de executar."),
             Level("OR", 2, {'OR': 1}, level2_function, "A porta OR retorna verdadeiro se pelo menos uma entrada for verdadeira. Caso você queira saber a tabela verdade de uma porta lógica, aperte a tecla T ou clique no botão de tabela verdade."),
@@ -85,7 +95,8 @@ levels = [  Level("INTRO", 1, {}, level0_function, "Bem vindo ao jogo de Lógica
             Level("HALF ADDER", 2, {'XOR': 1, 'AND': 1}, level8_function, "Neste nível, você deve usar uma porta XOR e uma porta AND para criar um somador de meio bit (half adder). O somador de meio bit recebe duas entradas e retorna a soma e o carry."),
             Level("FULL ADDER", 3, {'XOR': 2, 'AND': 2, 'OR': 1}, level9_function, "Neste nível, você deve usar duas portas XOR, duas portas AND e uma porta OR para criar um somador completo (full adder). O somador completo recebe três entradas: A, B e Cin (carry in) e retorna a soma e o carry out."),
             Level("FULL ADDER 2", 3, {'OR': 1, 'HALF ADDER': 2}, level9_function, "Neste nível, você deve usar duas portas HALF ADDER e uma porta OR para criar um somador completo (full adder)."),
-            Level("SUBTRACTION", 2, {'XOR': 1, 'AND': 1, 'NOT': 1}, level10_function, "Neste nível, você deve usar uma porta XOR, uma porta AND e uma porta NOT para criar um subtrator de meio bit (half subtractor). O subtrator de meio bit recebe duas entradas e retorna a diferença e o borrow."),
+            Level("HALF SUBT", 2, {'XOR': 1, 'AND': 1, 'NOT': 1}, level10_function, "Neste nível, você deve usar uma porta XOR, uma porta AND e uma porta NOT para criar um subtrator de meio bit (half subtractor). O subtrator de meio bit recebe duas entradas e retorna a diferença e o borrow."),
+            Level("FULL SUBT", 3, {'NOT': 2, 'XOR': 2, 'AND': 2, 'OR': 1}, level11_function, "Neste nível, você deve criar um subtrator completo (full subtractor). O subtrator completo recebe três entradas: A, B e Bin (borrow in) e retorna a diferença e o borrow out."),
         ]
 
 logic_gates = {
@@ -115,7 +126,10 @@ def play_level(screen, level):
 
     quit_pos = (width * 0.025, height * 0.025)
     quit_btn_rect = pygame.Rect(quit_pos[0], quit_pos[1], button_size, button_size)
-    reset_pos = (width - width * 0.3, height * 0.025)
+    if not level.isSimulator:
+        reset_pos = (width - width * 0.3, height * 0.025)
+    else:
+        reset_pos = (width - width * 0.1, height * 0.025)
     reset_btn_rect = pygame.Rect(reset_pos[0], reset_pos[1], button_size, button_size)
     truth_pos = (width - width * 0.2, height * 0.025)
     truth_btn_rect = pygame.Rect(truth_pos[0], truth_pos[1], button_size, button_size)
@@ -125,8 +139,6 @@ def play_level(screen, level):
 
     anim_start = time.time()
     while True:
-        fps = clock.get_fps()
-        pygame.display.set_caption(f"Logic Gate Puzzle - FPS: {fps:.1f}")
         bg_offset = int((time.time() - anim_start) * 20) % height
         draw_background(screen, background_color, bg_offset)
 
@@ -138,15 +150,16 @@ def play_level(screen, level):
         draw_quit_button(screen, quit_pos, (100, 25, 25), button_size, quit_btn_hover)
 
         reset_btn_hover = reset_btn_rect.collidepoint(mouse_pos)
-        draw_reset_button(screen, reset_pos, (170, 170, 170), button_size, reset_btn_hover)
+        draw_reset_button(screen, reset_pos, (170, 170, 170), button_size, reset_btn_hover, resource_path("images//reset.png"))
 
-        truth_btn_hover = truth_btn_rect.collidepoint(mouse_pos)
-        draw_truth_table_button(screen, truth_pos, (170, 170, 170), button_size, truth_btn_hover)
-        if truth_table:
-            level.draw_truth_table(screen, width, height)
+        if not level.isSimulator:
+            truth_btn_hover = truth_btn_rect.collidepoint(mouse_pos)
+            draw_truth_table_button(screen, truth_pos, (170, 170, 170), button_size, truth_btn_hover)
+            if truth_table:
+                level.draw_truth_table(screen, width, height)
         
-        run_btn_hover = run_btn_rect.collidepoint(mouse_pos)
-        draw_run_button(screen, run_pos, green, button_size, run_btn_hover)
+            run_btn_hover = run_btn_rect.collidepoint(mouse_pos)
+            draw_run_button(screen, run_pos, green, button_size, run_btn_hover)
 
 
         if dragging:
@@ -154,7 +167,7 @@ def play_level(screen, level):
             pygame.draw.rect(screen, background_color, palette_rect)
 
             if not hasattr(play_level, "_trash_icon") or play_level._trash_icon_size != width // 8:
-                trash_img = pygame.image.load("images/trash.png").convert_alpha()
+                trash_img = pygame.image.load(resource_path("images/trash.png")).convert_alpha()
                 trash_img = pygame.transform.scale(trash_img, (width // 8, width // 8))
                 play_level._trash_icon = trash_img
                 play_level._trash_icon_size = width // 8
@@ -179,20 +192,21 @@ def play_level(screen, level):
             elif e.type == pygame.MOUSEBUTTONDOWN:
                 if e.button == 1 :
                     if not dragging and not wiring:
-                        if run_btn_hover:
-                            level.compile()
-                            if level.evaluate():
-                                level.completed = True
-                                draw_success_message(screen, width, height, get_scaled_font('arial', 0.08), green)
-                                pygame.display.flip()
-                                pygame.time.wait(2500)
-                                return
-                            else:
+                        if not level.isSimulator:
+                            if run_btn_hover:
+                                level.compile()
+                                if level.evaluate():
+                                    level.completed = True
+                                    draw_success_message(screen, width, height, get_scaled_font('arial', 0.08), green)
+                                    pygame.display.flip()
+                                    pygame.time.wait(2500)
+                                    return
+                                else:
+                                    break
+                            elif truth_btn_hover:
+                                truth_table = not truth_table
                                 break
-                        elif truth_btn_hover:
-                            truth_table = not truth_table
-                            break
-                        elif quit_btn_hover:
+                        if quit_btn_hover:
                             wiring = None
                             dragging = None
                             truth_table = False
@@ -317,7 +331,7 @@ def play_level(screen, level):
                     level.cycle_inputs(True)
                 elif e.key == pygame.K_r:
                     level.reset()
-                elif e.key == pygame.K_RETURN or e.key == pygame.K_SPACE:
+                elif (e.key == pygame.K_RETURN or e.key == pygame.K_SPACE) and not level.isSimulator:
                     wiring = None
                     dragging = None
                     truth_table = False
@@ -328,7 +342,7 @@ def play_level(screen, level):
                         pygame.display.flip()
                         pygame.time.wait(2500)
                         return
-                elif e.key == pygame.K_BACKSPACE:
+                elif e.key == pygame.K_BACKSPACE or e.key == pygame.K_DELETE:
                     if level.gates:
                         last_gate_id = max(level.gates.keys())
                         last_gate = level.gates[last_gate_id]
@@ -350,7 +364,7 @@ def history_menu():
 
     # Buttons
     level_buttons = []
-    unlocked_levels = 1 # Trocar o valor para 1 na entrega
+    unlocked_levels = 15
 
     for idx, lvl in enumerate(levels):
         if idx == 0:
@@ -409,18 +423,13 @@ def history_menu():
                 elif event.key == pygame.K_UP:
                     selected = (selected - columns) % total_items
                 elif event.key == pygame.K_RETURN:
-                    if selected < unlocked_levels:
+                    if selected < len(levels):
                         play_level(screen, levels[selected])
                     return None
                 if event.key == pygame.K_ESCAPE:
                     return None
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                try:
-                    click_sound = pygame.mixer.Sound("sounds/click.wav")
-                    click_sound.play()
-                except Exception:
-                    pass
-                if selected < unlocked_levels:
+                if selected < len(levels):
                     play_level(screen, levels[selected])
                 return None
                 
@@ -428,8 +437,12 @@ def history_menu():
         clock.tick(60)
 
 
+def simulator_menu():
+    sim = Level("Simulador", 4, {"NOT": -1, "AND": -1, "OR": -1, "XOR": -1, "XNOR": -1, "NAND": -1, "NOR": -1}, isSim=True)
+    play_level(screen, sim)
+
+
 def options_menu():
-    sound_on = True
     fullscreen = False
     anim_start = time.time()
     while True:
@@ -441,7 +454,6 @@ def options_menu():
 
         mx, my = pygame.mouse.get_pos()
         buttons = [
-            Button(f"Som: {'On' if sound_on else 'Off'}", menu_font, WIDTH//2, HEIGHT // 3, 50, button_bg, hover_color),
             Button(f"Tela Cheia: {'On' if fullscreen else 'Off'}", menu_font, WIDTH//2, HEIGHT // 3 + (HEIGHT * 0.15), 50, button_bg, hover_color),
             Button("Voltar", menu_font, WIDTH//2, HEIGHT // 3 + (HEIGHT * 0.3), 50, button_bg, hover_color)
         ]
@@ -463,8 +475,6 @@ def options_menu():
             if event.type == pygame.KEYDOWN and selected is not None:
                 if event.key == pygame.K_RETURN:
                     if selected == 0:
-                        sound_on = not sound_on
-                    elif selected == 1:
                         fullscreen = not fullscreen
                         if fullscreen:
                             pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
@@ -474,14 +484,12 @@ def options_menu():
                         return
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and selected is not None:
                 if selected == 0:
-                    sound_on = not sound_on
-                elif selected == 1:
                     fullscreen = not fullscreen
                     if fullscreen:
                         pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
                     else:
                         pygame.display.set_mode((WIDTH, HEIGHT))
-                elif selected == 2:
+                elif selected == 1:
                     return
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -491,7 +499,7 @@ def options_menu():
 
 
 def main_menu():
-    options = ["Níveis", "Opções"]
+    options = ["Níveis", "Simulador", "Opções"]
     buttons = [Button(opt, title_font, WIDTH//2, HEIGHT // 3 + i*(HEIGHT * 0.2), 50, button_bg, hover_color) for i, opt in enumerate(options)]
     selected = 0
 
@@ -532,22 +540,15 @@ def main_menu():
                 elif event.key == pygame.K_RETURN:
                     if selected == 0:
                         history_menu()
-                    elif selected == -1:
-                        print("Error: Endless mode not implemented yet.")
+                    elif selected == 1:
+                        simulator_menu()
                     else:
                         options_menu()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                try:
-                    click_sound = pygame.mixer.Sound("sounds/click.wav")
-                    click_sound.play()
-                except Exception:
-                    pass
                 if selected == 0:
-                    level = history_menu()
-                    if level:
-                        play_level(screen, level)
-                elif selected == -1:
-                    print("Error: Endless mode not implemented yet.")
+                    history_menu()
+                elif selected == 1:
+                    simulator_menu()
                 else:
                     options_menu()
 
