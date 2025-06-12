@@ -599,5 +599,4 @@ class Level:
         local_ns = {}
         global_ns = {"__custom_funcs__": custom_gate_funcs}
         exec(func_str, global_ns, local_ns)
-        print(func_str)
         self.current_function = local_ns["logic_func"]

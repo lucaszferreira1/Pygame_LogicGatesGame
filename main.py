@@ -364,7 +364,7 @@ def history_menu():
 
     # Buttons
     level_buttons = []
-    unlocked_levels = 15
+    unlocked_levels = 1
 
     for idx, lvl in enumerate(levels):
         if idx == 0:
