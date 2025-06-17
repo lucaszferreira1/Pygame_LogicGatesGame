@@ -13,6 +13,7 @@ import time
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen.set_icon(pygame.image.load(resource_path("icon.ico")))
 pygame.display.set_caption("Logic Gate Puzzle")
 clock = pygame.time.Clock()
 
