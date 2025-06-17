@@ -90,6 +90,13 @@ def draw_success_message(screen, width, height, font, color):
     success_text = font.render("Nível Completo!", True, color)
     screen.blit(success_text, success_text.get_rect(center=(width // 2, height // 2)))
 
+def draw_failure_message(screen, width, height, font, color):
+    backboard_rect = pygame.Rect(width // 4, height // 2 - height // 8, width - width // 2, height // 4)
+    pygame.draw.rect(screen, (30, 30, 30), backboard_rect, border_radius=20)
+    pygame.draw.rect(screen, (60, 60, 60), backboard_rect, 4, border_radius=20)
+    failure_text = font.render("Nível Falhado!", True, color)
+    screen.blit(failure_text, failure_text.get_rect(center=(width // 2, height // 2)))
+
 def draw_run_button(screen, pos, color, button_size=56, hover=True):
     rect = pygame.Rect(pos[0], pos[1], button_size, button_size)
 

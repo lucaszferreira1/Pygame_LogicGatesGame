@@ -1,6 +1,6 @@
 import pygame
 import sys
-from ui import Button, draw_background, draw_success_message, draw_run_button, draw_truth_table_button, draw_quit_button, draw_reset_button
+from ui import Button, draw_background, draw_success_message, draw_failure_message, draw_run_button, draw_truth_table_button, draw_quit_button, draw_reset_button
 from logic import Gate, Wire, Level, resource_path
 import math
 import time
@@ -202,6 +202,9 @@ def play_level(screen, level):
                                     pygame.time.wait(2500)
                                     return
                                 else:
+                                    draw_failure_message(screen, width, height, get_scaled_font('arial', 0.08), (200, 50, 50))
+                                    pygame.display.flip()
+                                    pygame.time.wait(2500)
                                     break
                             elif truth_btn_hover:
                                 truth_table = not truth_table
@@ -342,6 +345,11 @@ def play_level(screen, level):
                         pygame.display.flip()
                         pygame.time.wait(2500)
                         return
+                    else:
+                        draw_failure_message(screen, width, height, get_scaled_font('arial', 0.08), (200, 50, 50))
+                        pygame.display.flip()
+                        pygame.time.wait(2500)
+                        break
                 elif e.key == pygame.K_BACKSPACE or e.key == pygame.K_DELETE:
                     if level.gates:
                         last_gate_id = max(level.gates.keys())
