@@ -374,6 +374,8 @@ def history_menu():
         else:
             break
 
+    voltar_button = Button("Voltar", menu_font, WIDTH // 2, HEIGHT - (HEIGHT * 0.1), button_height, button_bg, hover_color)
+
     for idx, lvl in enumerate(levels[:unlocked_levels]):
         col = idx % columns
         row = idx // columns
@@ -381,8 +383,7 @@ def history_menu():
         y = y_start + row * y_spacing
         level_buttons.append(Button(lvl.name, menu_font, x, y, button_height, button_bg, hover_color))
 
-    voltar_button = Button("Voltar", menu_font, WIDTH // 2, HEIGHT - (HEIGHT * 0.1), button_height, button_bg, hover_color)
-    selected = 0
+    selected = 1
     total_items = len(level_buttons) + 1
     anim_start = time.time()
     while True:
@@ -423,15 +424,18 @@ def history_menu():
                 elif event.key == pygame.K_UP:
                     selected = (selected - columns) % total_items
                 elif event.key == pygame.K_RETURN:
-                    if selected < len(levels):
-                        play_level(screen, levels[selected])
+                    if selected == unlocked_levels:
+                        return None
+                    elif selected < len(levels):
+                        return play_level(screen, levels[selected])
                     return None
                 if event.key == pygame.K_ESCAPE:
                     return None
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if selected < len(levels):
-                    play_level(screen, levels[selected])
-                return None
+                if voltar_button.rect.collidepoint((mx, my)):
+                    return None
+                else:
+                    return play_level(screen, levels[selected])
                 
 
         clock.tick(60)

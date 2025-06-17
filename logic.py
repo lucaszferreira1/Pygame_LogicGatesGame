@@ -595,7 +595,6 @@ class Level:
         func_lines.append(f"    {body}")
 
         func_str = "\n".join(func_lines)
-
         local_ns = {}
         global_ns = {"__custom_funcs__": custom_gate_funcs}
         exec(func_str, global_ns, local_ns)
