@@ -13,7 +13,7 @@ import time
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-screen.set_icon(pygame.image.load(resource_path("icon.ico")))
+pygame.display.set_icon(pygame.image.load(resource_path("icon.ico")))
 pygame.display.set_caption("Logic Gate Puzzle")
 clock = pygame.time.Clock()
 
@@ -357,7 +357,7 @@ def play_level(screen, level):
                         last_gate = level.gates[last_gate_id]
                         level.remove_gate(last_gate)
                         level.allowed_gates[last_gate.type] += 1
-
+                        
         clock.tick(240)
 
 
